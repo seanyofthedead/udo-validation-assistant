@@ -44,7 +44,7 @@ Legend: `[ ]` todo · `[x]` done · each task names its **done‑check**.
 
 ## Wave 4 — Acceptance + polish
 
-- [ ] **4.1 Golden‑path integration test.** Encode SPEC §8 step‑for‑step as one Vitest test driving the store + engine (load → validate → mix assertion → override empty rejected → override with reason accepted → export → audit‑trail contents). **Done:** test passes.
+- [x] **4.1 Golden‑path integration test.** Encode SPEC §8 step‑for‑step as one Vitest test driving the store + engine (load → validate → mix assertion → override empty rejected → override with reason accepted → export → audit‑trail contents). **Done:** test passes.
 - [ ] **4.2 Empty/edge states.** No‑evidence line shows abstain cleanly; export with zero exceptions doesn't crash. **Done:** tests cover both.
 - [ ] **4.3 README.** How to run, the determinism rule, where the engine lives, link to `AWS_FUTURE_STATE.md`. **Done:** `README.md` exists.
 - [ ] **4.4 Final gate.** All of SPEC §9 holds. **Done:** `npm run build` 0, `npm test` 0 failures, every box above checked.
