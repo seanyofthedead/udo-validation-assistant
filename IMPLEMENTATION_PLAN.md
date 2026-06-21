@@ -30,7 +30,7 @@ Legend: `[ ]` todo · `[x]` done · each task names its **done‑check**.
 - [x] **2.1 App state.** `src/state` store (Context + reducer, or Zustand) holding population, findings, dispositions, audit log. **Done:** reducer unit tests for confirm/override.
 - [x] **2.2 Override guard.** Override action **rejects empty/whitespace reason**; confirm needs no reason. **Done:** test asserts rejection and acceptance.
 - [x] **2.3 Immutable audit log.** Append‑only; override and export each append an event. **Done:** test asserts log grows and prior entries are never mutated.
-- [ ] **2.4 Export.** `src/export` → CSV + JSON for validated population, exceptions, de‑ob shortlist, audit trail; triggers Blob download. **Done:** unit test on the serializer output (headers + row counts); export appends an audit event.
+- [x] **2.4 Export.** `src/export` → CSV + JSON for validated population, exceptions, de‑ob shortlist, audit trail; triggers Blob download. **Done:** unit test on the serializer output (headers + row counts); export appends an audit event.
 
 ## Wave 3 — Screens (each independent; parallelizable via `/batch` after Wave 2)
 
