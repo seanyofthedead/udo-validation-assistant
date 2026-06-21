@@ -35,7 +35,7 @@ Legend: `[ ]` todo · `[x]` done · each task names its **done‑check**.
 ## Wave 3 — Screens (each independent; parallelizable via `/batch` after Wave 2)
 
 - [x] **3.1 App shell + routing.** Nav across the six screens; `runValidation` executes once on load over the seed. **Done:** renders without console errors; nav switches screens (RTL test).
-- [ ] **3.2 UDO Inventory.** Table with filter/sort by component, status, $, age; verdict badge. **Done:** RTL test: filter narrows rows; sort reorders.
+- [x] **3.2 UDO Inventory.** Table with filter/sort by component, status, $, age; verdict badge. **Done:** RTL test: filter narrows rows; sort reorders.
 - [ ] **3.3 UDO Detail + AI Findings panel.** Record + evidence + verdict + confidence + justification + cited rule + abstain note + de‑ob reasons. **Done:** RTL test renders a known QUESTIONABLE line with its justification text.
 - [ ] **3.4 High‑Risk Queue.** Questionable + de‑ob candidates, sorted by $ desc. **Done:** RTL test asserts ordering and that VALID lines are excluded.
 - [ ] **3.5 Review Workspace.** Confirm/override UI; override disabled until reason entered; disposition history. **Done:** RTL test: empty‑reason override blocked, valid override recorded + audited.
