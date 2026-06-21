@@ -40,7 +40,7 @@ Legend: `[ ]` todo · `[x]` done · each task names its **done‑check**.
 - [x] **3.4 High‑Risk Queue.** Questionable + de‑ob candidates, sorted by $ desc. **Done:** RTL test asserts ordering and that VALID lines are excluded.
 - [x] **3.5 Review Workspace.** Confirm/override UI; override disabled until reason entered; disposition history. **Done:** RTL test: empty‑reason override blocked, valid override recorded + audited.
 - [x] **3.6 Executive Dashboard.** Coverage %, exception count, total de‑ob $. **Done:** RTL test asserts the three numbers match engine output over the seed.
-- [ ] **3.7 Reporting/Export screen.** Buttons for CSV/JSON of each artifact; wired to Wave 2.4. **Done:** RTL test: clicking export calls the serializer and appends an audit event.
+- [x] **3.7 Reporting/Export screen.** Buttons for CSV/JSON of each artifact; wired to Wave 2.4. **Done:** RTL test: clicking export calls the serializer and appends an audit event.
 
 ## Wave 4 — Acceptance + polish
 

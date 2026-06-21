@@ -234,6 +234,10 @@ body {
   cursor: not-allowed;
 }
 
+.export-button {
+  margin-right: 0.4rem;
+}
+
 .override-form {
   margin-top: 1rem;
   border: 1px solid #ddd;
