@@ -1,10 +1,10 @@
 // Pure validation engine — SPEC.md §6.
 //
-// SCAFFOLD ONLY: these are compiling stubs so imports resolve. The real logic
-// lands in IMPLEMENTATION_PLAN.md Wave 1. Two invariants are enforced from day one:
+// Two invariants, enforced from day one (see determinism.guard.test.ts):
 //   1. No React imports here.
 //   2. No wall-clock / random calls — determinism comes from the explicit
-//      `asOfDate` argument (see determinism.guard.test.ts).
+//      `asOfDate` argument. Date math uses Date.UTC() (a pure function of its
+//      arguments) rather than any constructor or clock read.
 // The `void` statements mark stub parameters as intentionally unused.
 
 import type {
@@ -14,9 +14,78 @@ import type {
   DeobligationFlag,
   EvidenceItem,
   PriorYearStat,
+  ReportedStatus,
   UdoRecord,
   ValidationFinding,
 } from './types';
+
+// ---------------------------------------------------------------------------
+// Deterministic date + math helpers
+// ---------------------------------------------------------------------------
+
+const DAY_MS = 86_400_000;
+
+/** Parse an ISO 'YYYY-MM-DD' date to epoch ms via Date.UTC (pure, no clock). */
+function toEpochMs(iso: string): number {
+  const [y, m, d] = iso.split('-').map(Number);
+  return Date.UTC(y, m - 1, d);
+}
+
+/** Drawdown ratio = disbursed / obligated (0 when nothing is obligated). */
+function drawdown(udo: UdoRecord): number {
+  return udo.amountObligated > 0 ? udo.amountDisbursed / udo.amountObligated : 0;
+}
+
+function clamp01(n: number): number {
+  return Math.max(0, Math.min(1, n));
+}
+
+/** Round to 2 decimals so confidence values are clean and exactly comparable. */
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+/** Final confidence: penalties applied, clamped to [0,1], rounded to 2 dp. */
+function confidenceScore(raw: number): number {
+  return round2(clamp01(raw));
+}
+
+function pct(ratio: number): string {
+  return `${Math.round(ratio * 100)}%`;
+}
+
+// ---------------------------------------------------------------------------
+// SPEC §6 thresholds (named so the rules read like the spec)
+// ---------------------------------------------------------------------------
+
+const POP_EXPIRED_DAYS = 90; // OPEN_ACTIVE: period of performance ended > 90d ago
+const INACTIVE_DAYS = 180; // OPEN_ACTIVE: no activity in > 180d
+const FULLY_DRAWN = 0.98; // OPEN_*: drawdown >= 0.98 -> should be closing
+const PENDING_CLOSE_MIN_DRAWDOWN = 0.5; // PENDING_CLOSE: drawdown < 0.50 is suspect
+const MIN_EVIDENCE_ITEMS = 2; // fewer than this present -> abstain
+
+// Confidence model — SPEC §6 ("start 1.0; subtract fixed penalties ...; floor 0.0").
+// Confidence is the engine's certainty in the assessment, as a function of
+// evidence completeness and how close the deciding metrics sit to their cutoffs:
+//
+//   confidence = clamp01( 1.0
+//     − MISSING_EVIDENCE_PENALTY × (required evidence types not present)
+//     − SPARSE_EVIDENCE_PENALTY  × max(0, MIN_EVIDENCE_ITEMS − present items)
+//     − BORDERLINE_PENALTY       × (deciding metrics within epsilon of a cutoff) )
+//
+// A clean VALID/QUESTIONABLE line (full evidence, no borderline metric) scores 1.0.
+const MISSING_EVIDENCE_PENALTY = 0.2;
+const SPARSE_EVIDENCE_PENALTY = 0.2;
+const BORDERLINE_PENALTY = 0.1;
+const DRAWDOWN_EPSILON = 0.02; // drawdown within 2 points of a cutoff is borderline
+const DATE_EPSILON_DAYS = 15; // a date within 15 days of a cutoff is borderline
+
+export const CONFIDENCE_MODEL = {
+  MISSING_EVIDENCE_PENALTY,
+  SPARSE_EVIDENCE_PENALTY,
+  BORDERLINE_PENALTY,
+  MIN_EVIDENCE_ITEMS,
+} as const;
 
 /**
  * Engine output shapes. These are NOT part of the SPEC §5 data model (which
@@ -37,18 +106,119 @@ export interface ValidationRun {
 
 const NOT_IMPLEMENTED = 'not implemented — see IMPLEMENTATION_PLAN.md Wave 1';
 
-/** SPEC §6 — status verdict for a single UDO. */
+/** SPEC §6 — status verdict for a single UDO. Pure. */
 export function validateStatus(
   udo: UdoRecord,
   evidence: EvidenceItem[],
   rules: CrgRule[],
   asOfDate: string,
 ): ValidationFinding {
-  void udo;
-  void evidence;
-  void rules;
-  void asOfDate;
-  throw new Error(`validateStatus ${NOT_IMPLEMENTED}`);
+  const rule = rules.find((r) => r.appliesToStatus === udo.reportedStatus);
+
+  const presentItems = evidence.filter((e) => e.udoId === udo.id && e.present);
+  const presentTypes = new Set(presentItems.map((e) => e.type));
+  const missingRequired = rule ? rule.requiredEvidence.filter((t) => !presentTypes.has(t)) : [];
+
+  // --- Abstain (INSUFFICIENT_EVIDENCE) -------------------------------------
+  // Required evidence missing, fewer than 2 items present, or no governing rule.
+  // SPEC: "abstain rather than guess." citedRuleId is null on abstain.
+  if (!rule || missingRequired.length > 0 || presentItems.length < MIN_EVIDENCE_ITEMS) {
+    const parts: string[] = [];
+    if (!rule) parts.push(`No CRG rule governs reported status ${udo.reportedStatus}.`);
+    if (missingRequired.length > 0)
+      parts.push(`Required evidence missing: ${missingRequired.join(', ')}.`);
+    if (presentItems.length < MIN_EVIDENCE_ITEMS)
+      parts.push(
+        `Only ${presentItems.length} evidence item(s) present; at least ${MIN_EVIDENCE_ITEMS} required to assess.`,
+      );
+
+    const confidence = confidenceScore(
+      1 -
+        MISSING_EVIDENCE_PENALTY * missingRequired.length -
+        SPARSE_EVIDENCE_PENALTY * Math.max(0, MIN_EVIDENCE_ITEMS - presentItems.length),
+    );
+
+    return {
+      udoId: udo.id,
+      verdict: 'INSUFFICIENT_EVIDENCE',
+      confidence,
+      justification: `Abstaining: ${parts.join(' ')}`,
+      citedRuleId: null,
+      qcAgreed: true,
+    };
+  }
+
+  // --- Contradictions (QUESTIONABLE triggers) ------------------------------
+  const dd = drawdown(udo);
+  const asOf = toEpochMs(asOfDate);
+  const popEnd = toEpochMs(udo.periodOfPerformanceEnd);
+  const lastActivity = toEpochMs(udo.lastActivityDate);
+  const status: ReportedStatus = udo.reportedStatus;
+  const reasons: string[] = [];
+
+  // (a) OPEN_ACTIVE but period of performance expired >90d AND inactive >180d.
+  if (
+    status === 'OPEN_ACTIVE' &&
+    popEnd < asOf - POP_EXPIRED_DAYS * DAY_MS &&
+    lastActivity < asOf - INACTIVE_DAYS * DAY_MS
+  ) {
+    reasons.push(
+      `Reported OPEN_ACTIVE, but period of performance ended ${udo.periodOfPerformanceEnd} (>${POP_EXPIRED_DAYS} days ago) with no activity since ${udo.lastActivityDate} (>${INACTIVE_DAYS} days).`,
+    );
+  }
+
+  // (b) OPEN_ACTIVE / OPEN_INACTIVE but effectively fully disbursed.
+  if ((status === 'OPEN_ACTIVE' || status === 'OPEN_INACTIVE') && dd >= FULLY_DRAWN) {
+    reasons.push(
+      `Reported ${status}, but drawdown is ${pct(dd)} (>=${pct(FULLY_DRAWN)}); the obligation appears fully disbursed and should be closing.`,
+    );
+  }
+
+  // (c) PENDING_CLOSE but a large balance is still undisbursed.
+  if (status === 'PENDING_CLOSE' && dd < PENDING_CLOSE_MIN_DRAWDOWN) {
+    reasons.push(
+      `Reported PENDING_CLOSE, but drawdown is only ${pct(dd)} (<${pct(PENDING_CLOSE_MIN_DRAWDOWN)}); a large balance remains undisbursed.`,
+    );
+  }
+
+  // (d) Invoice evidence does not reconcile to the disbursed amount.
+  const invoiceItems = presentItems.filter((e) => e.type === 'INVOICE');
+  if (invoiceItems.length > 0) {
+    const invoiceSum = invoiceItems.reduce((s, e) => s + (e.amount ?? 0), 0);
+    const tolerance = Math.max(1, udo.amountDisbursed * 0.01);
+    if (Math.abs(invoiceSum - udo.amountDisbursed) > tolerance) {
+      reasons.push(
+        `Invoice evidence totals $${invoiceSum.toLocaleString('en-US')} but the disbursed amount is $${udo.amountDisbursed.toLocaleString('en-US')}; the amounts do not reconcile.`,
+      );
+    }
+  }
+
+  // --- Confidence: count borderline deciding metrics -----------------------
+  let borderline = 0;
+  const drawdownCutoff = status === 'PENDING_CLOSE' ? PENDING_CLOSE_MIN_DRAWDOWN : FULLY_DRAWN;
+  if (status !== 'CLOSED' && Math.abs(dd - drawdownCutoff) <= DRAWDOWN_EPSILON) borderline++;
+  if (status === 'OPEN_ACTIVE') {
+    if (Math.abs(popEnd - (asOf - POP_EXPIRED_DAYS * DAY_MS)) <= DATE_EPSILON_DAYS * DAY_MS)
+      borderline++;
+    if (Math.abs(lastActivity - (asOf - INACTIVE_DAYS * DAY_MS)) <= DATE_EPSILON_DAYS * DAY_MS)
+      borderline++;
+  }
+  const confidence = confidenceScore(1 - BORDERLINE_PENALTY * borderline);
+
+  const verdict = reasons.length > 0 ? 'QUESTIONABLE' : 'VALID';
+  const justification =
+    reasons.length > 0
+      ? `${reasons.join(' ')} Cited rule: ${rule.description}`
+      : `Reported ${status} is consistent with the cited rule and shows no contradiction. ${rule.description}`;
+
+  return {
+    udoId: udo.id,
+    verdict,
+    confidence,
+    justification,
+    citedRuleId: rule.id,
+    qcAgreed: true,
+  };
 }
 
 /** SPEC §6 — independent QC re-derivation (creator + checker). */
