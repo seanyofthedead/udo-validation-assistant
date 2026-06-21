@@ -16,7 +16,7 @@ Legend: `[ ]` todo · `[x]` done · each task names its **done‑check**.
 
 ## Wave 1 — Domain core (no UI) — *the contract everything else depends on*
 
-- [ ] **1.1 Types.** Implement all SPEC §5 interfaces in `src/domain/types.ts`. **Done:** `tsc --noEmit` clean.
+- [x] **1.1 Types.** Implement all SPEC §5 interfaces in `src/domain/types.ts`. **Done:** `tsc --noEmit` clean.
 - [ ] **1.2 Mock CRG ruleset.** `src/data/crgRules.ts` — one `CrgRule` per `ReportedStatus` with `requiredEvidence`. **Done:** unit test asserts a rule exists for each status.
 - [ ] **1.3 Seed population.** `src/data/seed.ts` — ~20 `UdoRecord`s across ≥3 components, their `EvidenceItem`s, and `PriorYearStat`s. **Fixture must be designed so the engine produces: several VALID, ≥3 QUESTIONABLE (each triggering a different rule), exactly ONE INSUFFICIENT_EVIDENCE, and ≥3 de‑obligation candidates with non‑zero $.** Use a fixed `AS_OF_DATE` constant. **Done:** snapshot test pins counts by verdict.
 - [ ] **1.4 Status engine.** `validateStatus()` per SPEC §6, pure. **Done:** unit tests cover each branch — VALID, each QUESTIONABLE trigger, the abstain path — with hand‑computed expected confidence.
