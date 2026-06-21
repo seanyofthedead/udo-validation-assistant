@@ -316,16 +316,44 @@ export function flagDeobligation(udo: UdoRecord, asOfDate: string): Deobligation
   return { udoId: udo.id, candidate, estimatedRecoverable, reasons };
 }
 
-/** SPEC §6 — prior-year population shift + per-line outliers. */
+// Anomaly thresholds (SPEC §6).
+const POPULATION_SHIFT_THRESHOLD = 0.5; // current vs prior line count differs by >=50%
+const OUTLIER_MEDIAN_MULTIPLE = 3; // amountObligated > 3x the component median
+
+/** Median of a numeric list (0 for an empty list). Pure. */
+function median(values: number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+}
+
+/**
+ * SPEC §6 — prior-year anomalies for one component. `current` is the current
+ * population (any subset is filtered to `component`); `priorStats` supplies the
+ * prior-year line count. Flags a >=50% population shift and the per-line
+ * obligation outliers (> 3x the component median). Pure.
+ */
 export function priorYearAnomaly(
   component: Component,
-  current: PriorYearStat,
+  current: UdoRecord[],
   priorStats: PriorYearStat[],
 ): PriorYearAnomalyResult {
-  void component;
-  void current;
-  void priorStats;
-  throw new Error(`priorYearAnomaly ${NOT_IMPLEMENTED}`);
+  const lines = current.filter((u) => u.component === component);
+  const currentCount = lines.length;
+
+  const prior = priorStats.find((s) => s.component === component);
+  const priorCount = prior ? prior.lineCount : 0;
+  const shift =
+    priorCount > 0 ? Math.abs(currentCount - priorCount) / priorCount : currentCount > 0 ? 1 : 0;
+  const populationShift = shift >= POPULATION_SHIFT_THRESHOLD;
+
+  const med = median(lines.map((u) => u.amountObligated));
+  const outlierUdoIds = lines
+    .filter((u) => med > 0 && u.amountObligated > OUTLIER_MEDIAN_MULTIPLE * med)
+    .map((u) => u.id);
+
+  return { component, populationShift, outlierUdoIds };
 }
 
 /** SPEC §6 / Plan 1.8 — full pipeline; emits one AuditEvent per AI action. */
