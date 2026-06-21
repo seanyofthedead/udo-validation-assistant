@@ -106,6 +106,11 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     }
 
     case 'OVERRIDE': {
+      // SPEC §10 — mandatory reason on override. A blank/whitespace reason is
+      // rejected: the reducer is a no-op, so no disposition or audit entry is
+      // recorded. (Confirm, by contrast, needs no reason.)
+      if (action.reason.trim() === '') return state;
+
       const disposition: Disposition = {
         udoId: action.udoId,
         action: 'OVERRIDE',
