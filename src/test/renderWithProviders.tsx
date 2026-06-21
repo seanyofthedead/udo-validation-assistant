@@ -10,9 +10,12 @@ import { crgRules, seedPopulation, seedEvidence, priorYearStats, AS_OF_DATE } fr
 
 export function renderWithProviders(
   ui: ReactElement,
-  opts: { initialScreen?: ScreenId } & Omit<RenderOptions, 'wrapper'> = {},
+  opts: { initialScreen?: ScreenId; initialUdoId?: string | null } & Omit<
+    RenderOptions,
+    'wrapper'
+  > = {},
 ) {
-  const { initialScreen, ...renderOpts } = opts;
+  const { initialScreen, initialUdoId, ...renderOpts } = opts;
   return render(
     <AppProvider
       init={{
@@ -23,7 +26,9 @@ export function renderWithProviders(
         asOfDate: AS_OF_DATE,
       }}
     >
-      <NavProvider initialScreen={initialScreen}>{ui}</NavProvider>
+      <NavProvider initialScreen={initialScreen} initialUdoId={initialUdoId}>
+        {ui}
+      </NavProvider>
     </AppProvider>,
     renderOpts,
   );

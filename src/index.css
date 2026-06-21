@@ -139,6 +139,74 @@ body {
   text-decoration: underline;
 }
 
+.picker {
+  display: inline-flex;
+  flex-direction: column;
+  font-size: 0.8rem;
+  gap: 0.2rem;
+  margin-bottom: 1rem;
+}
+
+.picker select {
+  font: inherit;
+  padding: 0.25rem;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 48rem) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 1rem;
+  background: #fff;
+}
+
+.record {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.2rem 0.75rem;
+  font-size: 0.85rem;
+  margin: 0 0 1rem;
+}
+
+.record dt {
+  font-weight: 600;
+  color: #555;
+}
+
+.record dd {
+  margin: 0;
+}
+
+.justification {
+  background: #f4f6fa;
+  border-left: 3px solid #1a4b8c;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.abstain-note {
+  background: #f0f0f0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.confidence {
+  font-size: 0.85rem;
+  color: #555;
+}
+
 /* Verdict badges */
 .badge {
   display: inline-block;

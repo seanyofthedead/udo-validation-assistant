@@ -18,13 +18,15 @@ const NavContext = createContext<Navigation | null>(null);
 
 export function NavProvider({
   initialScreen = 'dashboard',
+  initialUdoId = null,
   children,
 }: {
   initialScreen?: ScreenId;
+  initialUdoId?: string | null;
   children: ReactNode;
 }) {
   const [screen, setScreen] = useState<ScreenId>(initialScreen);
-  const [selectedUdoId, setSelectedUdoId] = useState<string | null>(null);
+  const [selectedUdoId, setSelectedUdoId] = useState<string | null>(initialUdoId);
 
   const value = useMemo<Navigation>(
     () => ({
