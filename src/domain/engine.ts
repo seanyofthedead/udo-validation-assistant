@@ -221,16 +221,67 @@ export function validateStatus(
   };
 }
 
-/** SPEC §6 — independent QC re-derivation (creator + checker). */
+// QC fail-safe: how much to scale confidence down when the checker disagrees.
+const QC_DISAGREE_FACTOR = 0.5;
+
+/**
+ * SPEC §6 — independent QC re-derivation (creator + checker pattern).
+ *
+ * The checker deliberately uses a DIFFERENT path than validateStatus: it has no
+ * CRG rules and no asOfDate, so it judges only what it can see independently —
+ * evidence sufficiency and financial consistency. It will not overturn a
+ * cautious verdict (QUESTIONABLE / INSUFFICIENT_EVIDENCE). It disagrees only
+ * when the creator asserted VALID yet the checker independently finds the
+ * evidence too thin or the financials self-contradictory. On disagreement it
+ * fails safe: force INSUFFICIENT_EVIDENCE and lower confidence — never
+ * confidently wrong.
+ */
 export function qcCheck(
   finding: ValidationFinding,
   udo: UdoRecord,
   evidence: EvidenceItem[],
 ): ValidationFinding {
-  void finding;
-  void udo;
-  void evidence;
-  throw new Error(`qcCheck ${NOT_IMPLEMENTED}`);
+  const present = evidence.filter((e) => e.udoId === udo.id && e.present);
+  const dd = drawdown(udo);
+
+  const evidenceInsufficient = present.length < MIN_EVIDENCE_ITEMS;
+
+  const invoiceItems = present.filter((e) => e.type === 'INVOICE');
+  const invoiceSum = invoiceItems.reduce((s, e) => s + (e.amount ?? 0), 0);
+  const tolerance = Math.max(1, udo.amountDisbursed * 0.01);
+  const financialInconsistency =
+    invoiceItems.length > 0 && Math.abs(invoiceSum - udo.amountDisbursed) > tolerance;
+
+  const overDrawnOpen =
+    (udo.reportedStatus === 'OPEN_ACTIVE' || udo.reportedStatus === 'OPEN_INACTIVE') &&
+    dd >= FULLY_DRAWN;
+  const underDrawnPendingClose =
+    udo.reportedStatus === 'PENDING_CLOSE' && dd < PENDING_CLOSE_MIN_DRAWDOWN;
+
+  const qcSeesProblem = financialInconsistency || overDrawnOpen || underDrawnPendingClose;
+
+  // The checker only challenges a clean bill of health (VALID).
+  const disagrees = finding.verdict === 'VALID' && (evidenceInsufficient || qcSeesProblem);
+
+  if (!disagrees) {
+    return { ...finding, qcAgreed: true };
+  }
+
+  const why: string[] = [];
+  if (evidenceInsufficient) why.push('evidence is too thin to support a VALID call');
+  if (financialInconsistency)
+    why.push('invoice evidence does not reconcile to the disbursed amount');
+  if (overDrawnOpen) why.push('the obligation appears fully disbursed');
+  if (underDrawnPendingClose) why.push('a large balance remains undisbursed');
+
+  return {
+    ...finding,
+    verdict: 'INSUFFICIENT_EVIDENCE',
+    confidence: round2(finding.confidence * QC_DISAGREE_FACTOR),
+    citedRuleId: null,
+    qcAgreed: false,
+    justification: `${finding.justification} | QC disagreed with the VALID assessment (${why.join('; ')}); abstaining as a fail-safe.`,
+  };
 }
 
 /** SPEC §6 — de-obligation candidacy for a single UDO. */
