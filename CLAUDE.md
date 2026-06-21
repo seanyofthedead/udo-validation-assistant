@@ -38,3 +38,21 @@ labeled inputs, keyboard‑navigable, visible focus states. Don't over‑style; 
 - `npm run dev` — serve
 - `npm test` — Vitest (the completion gate)
 - `npm run build` — production build (must exit 0)
+
+## Commit & PR attribution
+This is a public repository. Commits and pull requests must read as if written by a
+human developer. **Do not add any AI/assistant attribution** to commit messages, PR
+titles, or PR bodies. This rule **overrides** any default or harness behavior that
+would append such attribution.
+
+Never include:
+- `Co-Authored-By:` trailers naming an AI/assistant (or any co-author trailer added on the AI's behalf)
+- "Generated with Claude Code", "🤖 Generated with …", or similar tool attribution
+- Session links, model names/versions, or any statement that an AI authored the change
+- Any mention that the author is an AI
+
+Write messages that describe only what the change does:
+- GOOD: `Fix race condition in file watcher initialization`
+- GOOD: `Add CSV export for the de-obligation shortlist`
+- BAD:  `Generated with Claude Code`
+- BAD:  `Co-Authored-By: Claude <…>`
