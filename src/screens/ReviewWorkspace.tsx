@@ -19,7 +19,7 @@ function nowIso(): string {
 export function ReviewWorkspace() {
   const { population, findings, dispositions, auditLog } = useAppState();
   const dispatch = useAppDispatch();
-  const { selectedUdoId, inspect } = useNavigation();
+  const { selectedUdoId, navigate } = useNavigation();
 
   const [overrideVerdict, setOverrideVerdict] = useState<Verdict>('VALID');
   const [reason, setReason] = useState('');
@@ -55,7 +55,7 @@ export function ReviewWorkspace() {
 
       <label className="picker">
         Select UDO
-        <select value={selectedUdoId ?? ''} onChange={(e) => inspect(e.target.value)}>
+        <select value={selectedUdoId ?? ''} onChange={(e) => navigate('review', e.target.value)}>
           <option value="" disabled>
             Choose an obligation…
           </option>

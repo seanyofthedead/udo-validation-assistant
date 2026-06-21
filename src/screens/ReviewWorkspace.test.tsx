@@ -7,8 +7,23 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { screen, fireEvent, cleanup, within } from '@testing-library/react';
 import { renderWithProviders } from '../test/renderWithProviders';
 import { ReviewWorkspace } from './ReviewWorkspace';
+import { AppShell } from './AppShell';
 
 afterEach(cleanup);
+
+describe('ReviewWorkspace: picker stays on the review screen', () => {
+  it('selecting another UDO in the picker does not navigate away to Detail', () => {
+    renderWithProviders(<AppShell />, { initialScreen: 'review', initialUdoId: 'UDO-USCG-0003' });
+
+    fireEvent.change(screen.getByLabelText('Select UDO'), {
+      target: { value: 'UDO-USCG-0001' },
+    });
+
+    // still on the Review Workspace, not bounced to UDO Detail
+    expect(screen.getByRole('heading', { level: 2, name: 'Review Workspace' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 2, name: 'UDO Detail' })).not.toBeInTheDocument();
+  });
+});
 
 describe('ReviewWorkspace: override guard', () => {
   it('disables the override button until a reason is entered', () => {
