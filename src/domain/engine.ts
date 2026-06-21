@@ -104,8 +104,6 @@ export interface ValidationRun {
   audit: AuditEvent[];
 }
 
-const NOT_IMPLEMENTED = 'not implemented — see IMPLEMENTATION_PLAN.md Wave 1';
-
 /** SPEC §6 — status verdict for a single UDO. Pure. */
 export function validateStatus(
   udo: UdoRecord,
@@ -356,7 +354,14 @@ export function priorYearAnomaly(
   return { component, populationShift, outlierUdoIds };
 }
 
-/** SPEC §6 / Plan 1.8 — full pipeline; emits one AuditEvent per AI action. */
+/**
+ * SPEC §6 / Plan 1.8 — full deterministic pipeline.
+ *
+ * For each UDO: validateStatus (creator) -> qcCheck (checker) -> the resulting
+ * finding; then flagDeobligation. Per component: priorYearAnomaly. Every AI
+ * action appends an immutable AuditEvent. Audit timestamps are derived from
+ * asOfDate (no clock reads) so the whole run is reproducible.
+ */
 export function runValidation(
   population: UdoRecord[],
   evidence: EvidenceItem[],
@@ -364,10 +369,53 @@ export function runValidation(
   priorStats: PriorYearStat[],
   asOfDate: string,
 ): ValidationRun {
-  void population;
-  void evidence;
-  void rules;
-  void priorStats;
-  void asOfDate;
-  throw new Error(`runValidation ${NOT_IMPLEMENTED}`);
+  const timestamp = `${asOfDate}T00:00:00.000Z`;
+  const findings: ValidationFinding[] = [];
+  const deobFlags: DeobligationFlag[] = [];
+  const audit: AuditEvent[] = [];
+
+  for (const udo of population) {
+    const finding = qcCheck(validateStatus(udo, evidence, rules, asOfDate), udo, evidence);
+    findings.push(finding);
+    audit.push({
+      timestamp,
+      actor: 'AI',
+      action: 'VALIDATE',
+      udoId: udo.id,
+      detail: `Verdict ${finding.verdict} at confidence ${finding.confidence}; QC ${finding.qcAgreed ? 'agreed' : 'disagreed'}.`,
+    });
+
+    const flag = flagDeobligation(udo, asOfDate);
+    deobFlags.push(flag);
+    if (flag.candidate) {
+      audit.push({
+        timestamp,
+        actor: 'AI',
+        action: 'DEOBLIGATION_FLAG',
+        udoId: udo.id,
+        detail: `De-obligation candidate; estimated recoverable $${flag.estimatedRecoverable.toLocaleString('en-US')}.`,
+      });
+    }
+  }
+
+  // One anomaly result per distinct component, in first-seen order.
+  const components: Component[] = [];
+  for (const udo of population)
+    if (!components.includes(udo.component)) components.push(udo.component);
+  const anomalies = components.map((c) => priorYearAnomaly(c, population, priorStats));
+  for (const a of anomalies) {
+    if (a.populationShift || a.outlierUdoIds.length > 0) {
+      const notes: string[] = [];
+      if (a.populationShift) notes.push('population shifted >=50% vs prior year');
+      if (a.outlierUdoIds.length > 0) notes.push(`outlier line(s): ${a.outlierUdoIds.join(', ')}`);
+      audit.push({
+        timestamp,
+        actor: 'AI',
+        action: 'PRIOR_YEAR_ANOMALY',
+        detail: `${a.component}: ${notes.join('; ')}.`,
+      });
+    }
+  }
+
+  return { findings, deobFlags, anomalies, audit };
 }

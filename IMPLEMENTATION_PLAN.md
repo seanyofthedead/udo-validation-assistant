@@ -23,7 +23,7 @@ Legend: `[ ]` todo · `[x]` done · each task names its **done‑check**.
 - [x] **1.5 QC agent.** `qcCheck()` independent re‑derivation; forces abstain + lowers confidence on disagreement. **Done:** test with a contrived disagreement asserts fail‑safe behavior.
 - [x] **1.6 De‑obligation engine.** `flagDeobligation()` per SPEC §6. **Done:** tests assert candidate/non‑candidate and exact `estimatedRecoverable`.
 - [x] **1.7 Prior‑year anomaly.** `priorYearAnomaly()` — population shift + outliers. **Done:** test triggers a ≥50% shift flag and an outlier.
-- [ ] **1.8 Pipeline.** `runValidation(population, evidence, rules, priorStats, asOfDate)` returns `{findings, deobFlags, anomalies}` and emits one `AuditEvent` per AI action. **Done:** integration test over the full seed asserts the SPEC §8 verdict mix and that audit events were produced.
+- [x] **1.8 Pipeline.** `runValidation(population, evidence, rules, priorStats, asOfDate)` returns `{findings, deobFlags, anomalies}` and emits one `AuditEvent` per AI action. **Done:** integration test over the full seed asserts the SPEC §8 verdict mix and that audit events were produced.
 
 ## Wave 2 — State + audit + export (still no screens)
 
