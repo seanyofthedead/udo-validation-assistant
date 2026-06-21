@@ -1,9 +1,24 @@
-// Scaffold shell only. The six SPEC §7 screens and routing arrive in Wave 3.
+// App root — composes the data providers around the screen shell.
+// runValidation executes exactly once, inside AppProvider's reducer init.
+
+import { AppProvider } from './state';
+import { AppShell, NavProvider } from './screens';
+import { crgRules, seedPopulation, seedEvidence, priorYearStats, AS_OF_DATE } from './data';
+
 export default function App() {
   return (
-    <main>
-      <h1>UDO Validation Assistant</h1>
-      <p>Scaffold ready — screens are implemented in later waves.</p>
-    </main>
+    <AppProvider
+      init={{
+        population: seedPopulation,
+        evidence: seedEvidence,
+        rules: crgRules,
+        priorStats: priorYearStats,
+        asOfDate: AS_OF_DATE,
+      }}
+    >
+      <NavProvider>
+        <AppShell />
+      </NavProvider>
+    </AppProvider>
   );
 }

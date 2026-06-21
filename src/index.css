@@ -16,8 +16,104 @@ body {
   margin: 0;
 }
 
-main {
-  max-width: 64rem;
+.app {
+  max-width: 72rem;
   margin: 0 auto;
   padding: 1.5rem;
+}
+
+.app-header h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.5rem;
+}
+
+.app-subtitle {
+  margin: 0 0 1rem;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.app-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  border-bottom: 2px solid #d0d0d0;
+  margin-bottom: 1.5rem;
+}
+
+.nav-button {
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  font-size: 0.9rem;
+  color: #333;
+  cursor: pointer;
+}
+
+.nav-button:hover {
+  background: #ececec;
+}
+
+.nav-button[aria-current='page'] {
+  border-bottom-color: #1a4b8c;
+  font-weight: 600;
+  color: #1a4b8c;
+}
+
+.nav-button:focus-visible,
+.app a:focus-visible,
+.app button:focus-visible {
+  outline: 2px solid #1a4b8c;
+  outline-offset: 2px;
+}
+
+/* Dense, readable gov-data tables */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid #e2e2e2;
+  white-space: nowrap;
+}
+
+.data-table th {
+  background: #f0f0f0;
+}
+
+.data-table td.num,
+.data-table th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Verdict badges */
+.badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-valid {
+  background: #d6f0d6;
+  color: #1d6b1d;
+}
+
+.badge-questionable {
+  background: #fbe6c2;
+  color: #8a5a00;
+}
+
+.badge-insufficient {
+  background: #e2e2e2;
+  color: #555;
 }
