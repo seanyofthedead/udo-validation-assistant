@@ -17,6 +17,26 @@ npm install
 npm run dev        # serve the app
 ```
 
+## Using the app
+
+Validation runs once on load over the mock seed population. Navigate the six screens
+(SPEC §7) from the top nav:
+
+- **Executive Dashboard** — coverage %, exception count, total de‑obligation $.
+- **UDO Inventory** — full population, filterable by component/status and sortable by $ / age,
+  with a verdict badge per row.
+- **High‑Risk Queue** — questionable lines and de‑obligation candidates, ranked by $.
+- **UDO Detail** — record, evidence, verdict + confidence + justification + cited rule, and the
+  de‑obligation flag with its reasons.
+- **Review Workspace** — confirm or override the AI verdict (override requires a non‑empty
+  reason), with disposition history and the audit trail for the line.
+- **Reporting / Export** — download the validated population, exception worklist, de‑obligation
+  shortlist, and full audit trail as **CSV and JSON**.
+
+The app only **proposes**; a human disposes on every line, and every AI and human action is
+appended to an immutable audit trail. The end‑to‑end acceptance scenario lives in
+`src/goldenPath.test.ts`.
+
 ## The verification gate
 
 One command proves the repo is healthy. It runs typecheck → lint → build → tests in sequence:
