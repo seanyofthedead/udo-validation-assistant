@@ -74,6 +74,13 @@ export type AppAction =
       reason: string;
       user: string;
       timestamp: string;
+    }
+  | {
+      type: 'RECORD_EXPORT';
+      artifact: string;
+      format: 'CSV' | 'JSON';
+      user: string;
+      timestamp: string;
     };
 
 /** Append an event to the immutable audit log (new array; no mutation). */
@@ -131,6 +138,17 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         dispositions: [...state.dispositions, disposition],
         auditLog: appendAudit(state.auditLog, event),
       };
+    }
+
+    case 'RECORD_EXPORT': {
+      // Exporting an artifact is an auditable action (SPEC §10): record it.
+      const event: AuditEvent = {
+        timestamp: action.timestamp,
+        actor: 'HUMAN',
+        action: 'EXPORT',
+        detail: `${action.user} exported ${action.artifact} as ${action.format}.`,
+      };
+      return { ...state, auditLog: appendAudit(state.auditLog, event) };
     }
 
     default:
