@@ -88,6 +88,25 @@ function appendAudit(log: AuditEvent[], event: AuditEvent): AuditEvent[] {
   return [...log, event];
 }
 
+/**
+ * Build the audit event for an export. Shared by the reducer and the export
+ * orchestrator so a downloaded audit-trail snapshot can include the very export
+ * that produced it (single source of truth for the event shape).
+ */
+export function exportAuditEvent(input: {
+  artifact: string;
+  format: 'CSV' | 'JSON';
+  user: string;
+  timestamp: string;
+}): AuditEvent {
+  return {
+    timestamp: input.timestamp,
+    actor: 'HUMAN',
+    action: 'EXPORT',
+    detail: `${input.user} exported ${input.artifact} as ${input.format}.`,
+  };
+}
+
 export function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
     case 'CONFIRM': {
@@ -142,12 +161,12 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 
     case 'RECORD_EXPORT': {
       // Exporting an artifact is an auditable action (SPEC §10): record it.
-      const event: AuditEvent = {
+      const event = exportAuditEvent({
+        artifact: action.artifact,
+        format: action.format,
+        user: action.user,
         timestamp: action.timestamp,
-        actor: 'HUMAN',
-        action: 'EXPORT',
-        detail: `${action.user} exported ${action.artifact} as ${action.format}.`,
-      };
+      });
       return { ...state, auditLog: appendAudit(state.auditLog, event) };
     }
 

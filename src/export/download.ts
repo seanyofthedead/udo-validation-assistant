@@ -4,6 +4,7 @@
 
 import type { Dispatch } from 'react';
 import type { AppAction, AppState } from '../state/store';
+import { exportAuditEvent } from '../state/store';
 import {
   ARTIFACT_LABELS,
   buildExport,
@@ -36,7 +37,18 @@ export function exportArtifact(
   dispatch: Dispatch<AppAction>,
   opts: { user: string; timestamp: string },
 ): ExportPayload {
-  const payload = buildExport(kind, format, state);
+  // Serialize from a state that already carries this export's audit event, so an
+  // audit-trail download documents its own creation. (Other artifacts don't read
+  // the audit log, so the appended event is harmless for them.)
+  const event = exportAuditEvent({
+    artifact: ARTIFACT_LABELS[kind],
+    format,
+    user: opts.user,
+    timestamp: opts.timestamp,
+  });
+  const stateForExport: AppState = { ...state, auditLog: [...state.auditLog, event] };
+
+  const payload = buildExport(kind, format, stateForExport);
   triggerDownload(payload);
   dispatch({
     type: 'RECORD_EXPORT',

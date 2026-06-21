@@ -131,4 +131,19 @@ describe('exportArtifact: triggers download and audits the export', () => {
       action: 'EXPORT',
     });
   });
+
+  it('an audit-trail download documents its own export event', () => {
+    const state = initialState();
+    const dispatch = vi.fn();
+    const payload = exportArtifact('audit-trail', 'CSV', state, dispatch, {
+      user: 'analyst@dhs.gov',
+      timestamp: '2026-06-21T12:00:00.000Z',
+    });
+    // the downloaded snapshot includes the EXPORT row for this very download
+    expect(payload.content).toContain('exported audit trail as CSV');
+
+    // and the file carries one more row than the pre-export audit log
+    const dataRows = payload.content.split('\n').length - 1; // minus header
+    expect(dataRows).toBe(state.auditLog.length + 1);
+  });
 });
