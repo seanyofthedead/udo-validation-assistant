@@ -266,6 +266,43 @@ body {
   margin-bottom: 0.3rem;
 }
 
+.stat-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-card {
+  flex: 1 1 12rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  border: 1px solid #ddd;
+  border-left: 4px solid #1a4b8c;
+  border-radius: 6px;
+  padding: 1rem;
+  background: #fff;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-sub {
+  font-size: 0.8rem;
+  color: #777;
+}
+
 /* Verdict badges */
 .badge {
   display: inline-block;
