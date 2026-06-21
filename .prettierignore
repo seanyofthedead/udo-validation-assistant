@@ -1,0 +1,10 @@
+node_modules
+dist
+coverage
+package-lock.json
+
+# Source-of-truth documents — never reformat these.
+SPEC.md
+IMPLEMENTATION_PLAN.md
+CLAUDE.md
+AWS_FUTURE_STATE.md

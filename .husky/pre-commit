@@ -1,0 +1,4 @@
+# Keep agent commits green. The full gate (incl. build + lint everything) runs in CI.
+npx lint-staged
+npm run typecheck
+npm run test:run

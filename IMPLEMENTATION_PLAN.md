@@ -11,8 +11,8 @@ Legend: `[ ]` todo · `[x]` done · each task names its **done‑check**.
 
 ## Wave 0 — Scaffold
 
-- [ ] **0.1 Project init.** Vite + React + TypeScript app; add Vitest + @testing-library/react + jsdom; add Tailwind (or plain CSS modules). **Done:** `npm run build` and `npm test` both run (a trivial passing test is fine).
-- [ ] **0.2 Repo conventions.** Folder layout: `src/domain` (types + engine, no React), `src/data` (fixtures), `src/screens`, `src/components`, `src/state`, `src/export`. **Done:** folders exist; `src/domain/types.ts` holds every interface from SPEC §5 and compiles.
+- [x] **0.1 Project init.** Vite + React + TypeScript app; add Vitest + @testing-library/react + jsdom; add Tailwind (or plain CSS modules). **Done:** `npm run build` and `npm test` both run (a trivial passing test is fine).
+- [x] **0.2 Repo conventions.** Folder layout: `src/domain` (types + engine, no React), `src/data` (fixtures), `src/screens`, `src/components`, `src/state`, `src/export`. **Done:** folders exist; `src/domain/types.ts` holds every interface from SPEC §5 and compiles.
 
 ## Wave 1 — Domain core (no UI) — *the contract everything else depends on*
 
