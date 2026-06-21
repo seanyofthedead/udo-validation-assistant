@@ -5,7 +5,6 @@
 //   2. No wall-clock / random calls — determinism comes from the explicit
 //      `asOfDate` argument. Date math uses Date.UTC() (a pure function of its
 //      arguments) rather than any constructor or clock read.
-// The `void` statements mark stub parameters as intentionally unused.
 
 import type {
   AuditEvent,
