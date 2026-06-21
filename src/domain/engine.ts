@@ -284,11 +284,36 @@ export function qcCheck(
   };
 }
 
-/** SPEC §6 — de-obligation candidacy for a single UDO. */
+// De-obligation: an open balance is recoverable when its performance window has
+// closed, little was drawn, and it has gone quiet.
+const DEOB_DRAWDOWN_MAX = 0.25;
+
+/** SPEC §6 — de-obligation candidacy for a single UDO. Pure. */
 export function flagDeobligation(udo: UdoRecord, asOfDate: string): DeobligationFlag {
-  void udo;
-  void asOfDate;
-  throw new Error(`flagDeobligation ${NOT_IMPLEMENTED}`);
+  const asOf = toEpochMs(asOfDate);
+  const popEnd = toEpochMs(udo.periodOfPerformanceEnd);
+  const lastActivity = toEpochMs(udo.lastActivityDate);
+  const dd = drawdown(udo);
+
+  const expired = popEnd < asOf;
+  const lowDrawdown = dd < DEOB_DRAWDOWN_MAX;
+  const inactive = lastActivity < asOf - INACTIVE_DAYS * DAY_MS;
+
+  const reasons: string[] = [];
+  if (expired)
+    reasons.push(
+      `Period of performance ended ${udo.periodOfPerformanceEnd}, before the as-of date.`,
+    );
+  if (lowDrawdown)
+    reasons.push(
+      `Drawdown is ${pct(dd)} (<${pct(DEOB_DRAWDOWN_MAX)}); most of the obligation is undisbursed.`,
+    );
+  if (inactive) reasons.push(`No activity since ${udo.lastActivityDate} (>${INACTIVE_DAYS} days).`);
+
+  const candidate = expired && lowDrawdown && inactive;
+  const estimatedRecoverable = candidate ? udo.amountObligated - udo.amountDisbursed : 0;
+
+  return { udoId: udo.id, candidate, estimatedRecoverable, reasons };
 }
 
 /** SPEC §6 — prior-year population shift + per-line outliers. */
