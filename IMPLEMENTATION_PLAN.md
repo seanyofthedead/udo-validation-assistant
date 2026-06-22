@@ -119,7 +119,7 @@ set due dates → launch (Draft→Active) → campaign detail shows three assign
 
 ### Tasks
 - [x] **6.1 Campaign + Assignment types** in `types.ts`. **Done:** `tsc --noEmit` clean.
-- [ ] **6.2 Campaign state machine.** Pure reducer Draft→Active→Closing→Closed. **Done:** tests cover every legal transition and reject illegal ones.
+- [x] **6.2 Campaign state machine.** Pure reducer Draft→Active→Closing→Closed. **Done:** tests cover every legal transition and reject illegal ones.
 - [ ] **6.3 Population selectors.** Manual / saved filter / top‑N by risk, reusing the Wave 5 queue. **Done:** test asserts top‑N selection matches queue's top N.
 - [ ] **6.4 Assignment generation + due dates.** Split population into per‑component assignments with due dates. **Done:** unit test on assignment generation.
 - [ ] **6.5 Audit on campaign/assignment changes.** Create + transition each append one `AuditEvent`. **Done:** test‑asserted.

@@ -3,3 +3,4 @@ export * from './types';
 export * from './engine';
 export * from './riskModel';
 export * from './riskEngine';
+export * from './campaign';
