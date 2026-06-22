@@ -6,6 +6,8 @@ export * from './Dashboard';
 export * from './Inventory';
 export * from './HighRiskQueue';
 export * from './StaleExplorer';
+export * from './Campaigns';
+export * from './CampaignDetail';
 export * from './Detail';
 export * from './ReviewWorkspace';
 export * from './Reporting';

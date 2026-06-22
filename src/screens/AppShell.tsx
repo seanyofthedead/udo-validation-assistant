@@ -9,6 +9,8 @@ import { Dashboard } from './Dashboard';
 import { Inventory } from './Inventory';
 import { HighRiskQueue } from './HighRiskQueue';
 import { StaleExplorer } from './StaleExplorer';
+import { Campaigns } from './Campaigns';
+import { CampaignDetail } from './CampaignDetail';
 import { Detail } from './Detail';
 import { ReviewWorkspace } from './ReviewWorkspace';
 import { Reporting } from './Reporting';
@@ -18,6 +20,8 @@ const SCREEN_COMPONENTS: Record<ScreenId, () => React.JSX.Element> = {
   inventory: Inventory,
   'high-risk': HighRiskQueue,
   'stale-explorer': StaleExplorer,
+  campaigns: Campaigns,
+  'campaign-detail': CampaignDetail,
   detail: Detail,
   review: ReviewWorkspace,
   reporting: Reporting,

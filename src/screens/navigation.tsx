@@ -8,10 +8,13 @@ import type { ScreenId } from './registry';
 interface Navigation {
   screen: ScreenId;
   selectedUdoId: string | null;
+  selectedCampaignId: string | null;
   /** Go to a screen, optionally selecting a UDO. */
   navigate: (screen: ScreenId, udoId?: string) => void;
   /** Select a UDO and jump to its Detail screen. */
   inspect: (udoId: string) => void;
+  /** Select a campaign and jump to its Campaign Detail screen. */
+  openCampaign: (campaignId: string) => void;
 }
 
 const NavContext = createContext<Navigation | null>(null);
@@ -19,19 +22,23 @@ const NavContext = createContext<Navigation | null>(null);
 export function NavProvider({
   initialScreen = 'dashboard',
   initialUdoId = null,
+  initialCampaignId = null,
   children,
 }: {
   initialScreen?: ScreenId;
   initialUdoId?: string | null;
+  initialCampaignId?: string | null;
   children: ReactNode;
 }) {
   const [screen, setScreen] = useState<ScreenId>(initialScreen);
   const [selectedUdoId, setSelectedUdoId] = useState<string | null>(initialUdoId);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(initialCampaignId);
 
   const value = useMemo<Navigation>(
     () => ({
       screen,
       selectedUdoId,
+      selectedCampaignId,
       navigate: (next, udoId) => {
         setScreen(next);
         if (udoId !== undefined) setSelectedUdoId(udoId);
@@ -40,8 +47,12 @@ export function NavProvider({
         setSelectedUdoId(udoId);
         setScreen('detail');
       },
+      openCampaign: (campaignId) => {
+        setSelectedCampaignId(campaignId);
+        setScreen('campaign-detail');
+      },
     }),
-    [screen, selectedUdoId],
+    [screen, selectedUdoId, selectedCampaignId],
   );
 
   return <NavContext.Provider value={value}>{children}</NavContext.Provider>;

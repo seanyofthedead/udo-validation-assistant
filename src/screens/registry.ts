@@ -7,6 +7,8 @@ export type ScreenId =
   | 'inventory'
   | 'high-risk'
   | 'stale-explorer'
+  | 'campaigns'
+  | 'campaign-detail'
   | 'detail'
   | 'review'
   | 'reporting';
@@ -21,7 +23,11 @@ export const SCREENS: ScreenMeta[] = [
   { id: 'inventory', label: 'UDO Inventory' },
   { id: 'high-risk', label: 'High-Risk Queue' },
   { id: 'stale-explorer', label: 'Stale Obligation Explorer' },
+  { id: 'campaigns', label: 'Review Campaigns' },
   { id: 'detail', label: 'UDO Detail' },
   { id: 'review', label: 'Review Workspace' },
   { id: 'reporting', label: 'Reporting / Export' },
 ];
+
+// 'campaign-detail' is reachable from the campaign list (openCampaign), not the
+// top nav — it requires a selected campaign, like the UDO Detail deep-link.

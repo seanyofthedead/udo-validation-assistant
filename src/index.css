@@ -352,6 +352,27 @@ body {
   color: #842029;
 }
 
+/* Campaign state badges (Wave 6): Draft → Active → Closing → Closed */
+.badge[data-state='DRAFT'] {
+  background: #e2e2e2;
+  color: #555;
+}
+
+.badge[data-state='ACTIVE'] {
+  background: #cfe3ff;
+  color: #1f4e8a;
+}
+
+.badge[data-state='CLOSING'] {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.badge[data-state='CLOSED'] {
+  background: #d6f0d6;
+  color: #1d6b1d;
+}
+
 /* Risk score + inline factor chips */
 .score-cell {
   font-variant-numeric: tabular-nums;

@@ -23,13 +23,18 @@ export function renderWithProviders(
   opts: {
     initialScreen?: ScreenId;
     initialUdoId?: string | null;
+    initialCampaignId?: string | null;
     init?: InitInputs;
   } & Omit<RenderOptions, 'wrapper'> = {},
 ) {
-  const { initialScreen, initialUdoId, init = SEED_INIT, ...renderOpts } = opts;
+  const { initialScreen, initialUdoId, initialCampaignId, init = SEED_INIT, ...renderOpts } = opts;
   return render(
     <AppProvider init={init}>
-      <NavProvider initialScreen={initialScreen} initialUdoId={initialUdoId}>
+      <NavProvider
+        initialScreen={initialScreen}
+        initialUdoId={initialUdoId}
+        initialCampaignId={initialCampaignId}
+      >
         {ui}
       </NavProvider>
     </AppProvider>,

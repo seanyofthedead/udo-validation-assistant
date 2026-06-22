@@ -123,7 +123,7 @@ set due dates → launch (Draft→Active) → campaign detail shows three assign
 - [x] **6.3 Population selectors.** Manual / saved filter / top‑N by risk, reusing the Wave 5 queue. **Done:** test asserts top‑N selection matches queue's top N.
 - [x] **6.4 Assignment generation + due dates.** Split population into per‑component assignments with due dates. **Done:** unit test on assignment generation.
 - [x] **6.5 Audit on campaign/assignment changes.** Create + transition each append one `AuditEvent`. **Done:** test‑asserted.
-- [ ] **6.6 Campaign list + create wizard UI.** **Done:** RTL test creates a campaign end‑to‑end.
+- [x] **6.6 Campaign list + create wizard UI.** **Done:** RTL test creates a campaign end‑to‑end.
 - [ ] **6.7 Campaign detail + progress UI.** State badge + per‑component progress table. **Done:** RTL test renders three assignments at 0%.
 - [ ] **6.8 Wave 6 demo integration test.** The demo scenario above. **Done:** test passes.
 - [ ] **6.9 Final gate.** **Done:** `npm run gate` 0 failures; no regression; Wave 6 boxes checked.
