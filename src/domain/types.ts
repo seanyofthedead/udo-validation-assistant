@@ -76,3 +76,23 @@ export interface AuditEvent {
   udoId?: string;
   detail: string;
 }
+
+// --- Phase 2 (Wave 5) — Risk-based prioritization -------------------------
+// Additive to the Phase 1 model. SPEC §5.1; weights/thresholds live in
+// src/domain/riskModel.ts (mirroring docs/wave5-risk-scoring-model.md §2).
+
+export type RiskBand = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+export interface RiskFactor {
+  name: string; // e.g. "R1 verdict", surfaced in the risk detail panel
+  points: number; // this factor's contribution to the score
+  reason: string; // plain-language explanation of the contribution
+}
+
+export interface RiskScore {
+  udoId: string;
+  score: number; // 0..100, deterministic; equals the sum of factor points
+  band: RiskBand;
+  factors: RiskFactor[]; // every point attributable to a factor (explainability)
+  asOfDate: string; // ISO date the score was computed against
+}

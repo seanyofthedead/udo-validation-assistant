@@ -20,6 +20,9 @@ import type {
   DeobligationFlag,
   Disposition,
   AuditEvent,
+  RiskBand,
+  RiskFactor,
+  RiskScore,
 } from './types';
 
 describe('SPEC §5 data model: union literals', () => {
@@ -36,6 +39,11 @@ describe('SPEC §5 data model: union literals', () => {
   it('Verdict covers every verdict bucket', () => {
     const all: Verdict[] = ['VALID', 'QUESTIONABLE', 'INSUFFICIENT_EVIDENCE'];
     expect(all).toHaveLength(3);
+  });
+
+  it('RiskBand covers every risk band (Phase 2)', () => {
+    const all: RiskBand[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+    expect(all).toHaveLength(4);
   });
 
   it('EvidenceType covers every evidence type', () => {
@@ -145,6 +153,25 @@ describe('SPEC §5 data model: interface shapes', () => {
     };
     expect(confirm.overrideVerdict).toBeUndefined();
     expect(override.overrideVerdict).toBe('VALID');
+  });
+
+  it('RiskScore carries score, band, attributable factors, and asOfDate (Phase 2)', () => {
+    const factor: RiskFactor = {
+      name: 'R1 verdict',
+      points: 25,
+      reason: 'Validation QUESTIONABLE.',
+    };
+    const risk: RiskScore = {
+      udoId: 'UDO-USCG-0001',
+      score: 78,
+      band: 'CRITICAL',
+      factors: [factor],
+      asOfDate: '2026-06-21',
+    };
+    expect(risk.score).toBeGreaterThanOrEqual(0);
+    expect(risk.score).toBeLessThanOrEqual(100);
+    expectTypeOf(risk.factors).toBeArray();
+    expect(risk.factors[0].name).toBe('R1 verdict');
   });
 
   it('AuditEvent records an actor, action, and detail; udoId optional', () => {
