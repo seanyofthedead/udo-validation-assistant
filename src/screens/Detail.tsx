@@ -4,10 +4,10 @@
 
 import { useAppState } from '../state';
 import { useNavigation } from './navigation';
-import { VerdictBadge, formatUsd, formatPct, drawdownRatio } from '../components';
+import { RiskBandChip, VerdictBadge, formatUsd, formatPct, drawdownRatio } from '../components';
 
 export function Detail() {
-  const { population, evidence, findings, deobFlags, rules } = useAppState();
+  const { population, evidence, findings, deobFlags, rules, riskScores } = useAppState();
   const { selectedUdoId, inspect } = useNavigation();
 
   const udo = population.find((u) => u.id === selectedUdoId);
@@ -15,6 +15,7 @@ export function Detail() {
   const deob = deobFlags.find((d) => d.udoId === selectedUdoId);
   const udoEvidence = evidence.filter((e) => e.udoId === selectedUdoId);
   const citedRule = rules.find((r) => r.id === finding?.citedRuleId);
+  const risk = riskScores.find((r) => r.udoId === selectedUdoId);
 
   return (
     <section aria-labelledby="detail-title">
@@ -125,6 +126,53 @@ export function Detail() {
               <p>Not a de-obligation candidate.</p>
             )}
           </article>
+
+          {risk && (
+            <article aria-labelledby="risk-title" className="panel">
+              <h3 id="risk-title">Risk assessment</h3>
+              <p className="finding-verdict">
+                <RiskBandChip band={risk.band} />{' '}
+                <span className="confidence">
+                  risk score <strong data-risk-score={risk.score}>{risk.score}</strong> / 100
+                </span>
+              </p>
+              <p>
+                Every point is attributable to a factor below; the contributions sum to the score
+                (SPEC §5.1).
+              </p>
+              <table className="data-table risk-factors">
+                <thead>
+                  <tr>
+                    <th>Factor</th>
+                    <th className="num">Points</th>
+                    <th>Reason</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {risk.factors.map((f) => (
+                    <tr key={f.name} data-factor={f.name}>
+                      <td>{f.name}</td>
+                      <td className="num" data-points={f.points}>
+                        {f.points}
+                      </td>
+                      <td>{f.reason}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <th scope="row">Total</th>
+                    <td className="num" data-total-score={risk.score}>
+                      {risk.factors.reduce((sum, f) => sum + f.points, 0)}
+                    </td>
+                    <td>
+                      Band <strong>{risk.band}</strong>
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </article>
+          )}
         </div>
       )}
     </section>

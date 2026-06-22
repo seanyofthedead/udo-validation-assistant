@@ -15,7 +15,9 @@ describe('Detail: AI findings panel', () => {
     renderWithProviders(<Detail />, { initialUdoId: 'UDO-USCG-0003' });
 
     expect(screen.getByText('Questionable')).toBeInTheDocument();
-    expect(screen.getByText(/confidence 100%/i)).toBeInTheDocument();
+    // Anchored so it matches the AI-finding confidence span, not the risk
+    // panel's "Validation confidence 100%." factor reason (Wave 5 added that).
+    expect(screen.getByText(/^confidence 100%$/i)).toBeInTheDocument();
     expect(screen.getByText(/CRG-OPEN-ACTIVE-01/)).toBeInTheDocument();
     // the justification text from the engine (distinct from the record label)
     expect(
@@ -40,5 +42,35 @@ describe('Detail: AI findings panel', () => {
     expect(screen.getByText(/Select a UDO to view its details/i)).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Select UDO'), { target: { value: 'UDO-USCG-0001' } });
     expect(screen.getByText('Valid')).toBeInTheDocument();
+  });
+});
+
+describe('Detail: risk assessment panel (Wave 5)', () => {
+  it('breaks the score into factors whose points sum to the displayed score', () => {
+    // UDO-USCG-0002 is the seed CRITICAL line.
+    const { container } = renderWithProviders(<Detail />, { initialUdoId: 'UDO-USCG-0002' });
+
+    const scoreEl = container.querySelector('[data-risk-score]');
+    const displayedScore = Number(scoreEl?.getAttribute('data-risk-score'));
+    expect(displayedScore).toBeGreaterThan(0);
+
+    const factorPoints = Array.from(container.querySelectorAll('[data-points]')).map((el) =>
+      Number(el.getAttribute('data-points')),
+    );
+    expect(factorPoints).toHaveLength(8); // R1–R8
+    const sum = factorPoints.reduce((s, p) => s + p, 0);
+    expect(sum).toBe(displayedScore);
+
+    // the footer Total cell also equals the score
+    const total = Number(
+      container.querySelector('[data-total-score]')?.getAttribute('data-total-score'),
+    );
+    expect(total).toBe(displayedScore);
+  });
+
+  it('shows the risk band chip for the line', () => {
+    const { container } = renderWithProviders(<Detail />, { initialUdoId: 'UDO-USCG-0002' });
+    const chip = container.querySelector('#risk-title ~ .finding-verdict [data-band]');
+    expect(chip?.getAttribute('data-band')).toBe('CRITICAL');
   });
 });

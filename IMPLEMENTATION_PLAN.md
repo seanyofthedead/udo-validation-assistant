@@ -74,7 +74,7 @@ one component and one band narrows the list.
 - [x] **5.5 `scorePopulation()` + audit.** Score the whole population, return sorted desc; emit one `AuditEvent` per scoring run. **Done:** integration test asserts sort order + audit event emitted.
 - [x] **5.6 Seed band spread.** Extend the seed so the scored population spans all four bands (≥1 CRITICAL, ≥2 HIGH, non‑empty LOW). **Done:** band‑count snapshot test.
 - [x] **5.7 High‑Risk Queue upgrade.** Generalize the Phase 1 queue to risk‑ranked: score, band chip, top‑3 factors, $, age; filters (component, band, status, funding type, $ range, age). **Done:** RTL test — default sort desc, a filter narrows rows, band chips render.
-- [ ] **5.8 Risk detail panel.** Break a line's score into factors (points + reason). **Done:** RTL test asserts the displayed breakdown sums to the score.
+- [x] **5.8 Risk detail panel.** Break a line's score into factors (points + reason). **Done:** RTL test asserts the displayed breakdown sums to the score.
 - [ ] **5.9 Stale Obligation Explorer.** Aging buckets, expired‑PoP filter, low‑drawdown filter, sortable by recoverable $. **Done:** RTL test on filter + sort.
 - [ ] **5.10 No‑hardcoded‑numbers guard.** Test or lint rule asserting no scoring number is hard‑coded outside `RISK_MODEL`. **Done:** guard passes.
 - [ ] **5.11 Wave 5 demo integration test.** Encode the demo scenario: load → score → queue ranks CRITICAL/HIGH top with factors → filter to one component+band narrows. **Done:** test passes.
