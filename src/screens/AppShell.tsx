@@ -8,6 +8,7 @@ import { useNavigation } from './navigation';
 import { Dashboard } from './Dashboard';
 import { Inventory } from './Inventory';
 import { HighRiskQueue } from './HighRiskQueue';
+import { StaleExplorer } from './StaleExplorer';
 import { Detail } from './Detail';
 import { ReviewWorkspace } from './ReviewWorkspace';
 import { Reporting } from './Reporting';
@@ -16,6 +17,7 @@ const SCREEN_COMPONENTS: Record<ScreenId, () => React.JSX.Element> = {
   dashboard: Dashboard,
   inventory: Inventory,
   'high-risk': HighRiskQueue,
+  'stale-explorer': StaleExplorer,
   detail: Detail,
   review: ReviewWorkspace,
   reporting: Reporting,
