@@ -102,6 +102,9 @@ magnitude, evidence completeness, prior‑year anomaly signal. Output: `riskScor
 `riskBand` (LOW/MEDIUM/HIGH/CRITICAL), and `riskFactors[]` (each factor, its contribution, and
 a plain‑language reason). Must be a pure function of inputs and an explicit `asOfDate` (same
 determinism rule as the Phase 1 engine). No black‑box weighting — every point is attributable.
+The factor weights, thresholds, and band cutoffs are defined in
+`docs/wave5-risk-scoring-model.md` (the single source of truth, mirrored by the `RISK_MODEL`
+constant in `src/domain/riskModel.ts`); SPEC does not restate those numbers.
 
 ### 5.2 High‑Risk UDO Queue (Phase 2, Wave 5)
 A ranked, filterable worklist driven by the risk engine. Sort by score/$/age; filter by

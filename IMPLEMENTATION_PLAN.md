@@ -1,11 +1,13 @@
 # IMPLEMENTATION_PLAN.md — UDO Review Platform
 
-> The loop works this plan top to bottom. **Each iteration: pick the first unchecked task,
-> implement it, write/extend its test, run the gate, check the box, commit.** SPEC.md wins ties.
+> The loop works this plan top to bottom. **Each iteration: pick the first unchecked `[ ]`
+> task, implement it, write/extend its test, run the gate, check the box, commit.** SPEC.md
+> wins ties.
 >
 > **Waves 0–4 are COMPLETE and are a historical record — do not modify them.** New work starts
-> at Wave 5. Each new wave carries Objectives, Features, User stories, UX, Data, Technical,
-> Dependencies, Demo scenario, and measurable Acceptance criteria.
+> at Wave 5. Each wave carries narrative (Objectives, Features, User stories, UX, Data,
+> Technical, Dependencies, Demo, Acceptance criteria) **and a `### Tasks` checklist** of `[ ]`
+> items — the checklist is what the loop operates on; the narrative is the context for it.
 
 Legend: `[x]` done · `[ ]` todo.
 
@@ -46,9 +48,10 @@ reason}[], asOfDate }`. Extend seed so the population yields a spread across all
 a clear top‑N. No change to Phase 1 entities.
 
 **Technical requirements.** `scoreRisk(udo, finding, deobFlag, anomaly, asOfDate)` — pure,
-deterministic, no wall‑clock/random; documented weighting with each factor's max points;
-`scorePopulation()` returns sorted scores; emits an `AuditEvent` per scoring run. Engine lives
-in `src/domain`, free of React.
+deterministic, reads only the `RISK_MODEL` constant; emits a `{name, points, reason}` per
+factor; `scorePopulation()` returns sorted scores and emits an `AuditEvent` per run. Engine in
+`src/domain`, free of React. Weights/thresholds live ONLY in `RISK_MODEL`
+(`src/domain/riskModel.ts`), mirroring `docs/wave5-risk-scoring-model.md` §2.
 
 **Dependencies.** Phase 1 validation, de‑ob, and anomaly engines (done).
 
@@ -61,7 +64,21 @@ one component and one band narrows the list.
 - Seed yields ≥1 CRITICAL, ≥2 HIGH, and a non‑empty LOW band (snapshot‑pinned).
 - Queue sorts by score desc by default; each row shows band + ≥1 factor.
 - Risk detail sums factor points to the displayed score (test‑asserted).
-- `npm run gate` green; new tests added; Wave 5 boxes checked.
+- `npm run gate` green; new tests added; all Wave 5 tasks checked.
+
+### Tasks
+- [ ] **5.1 RISK_MODEL constant.** Create `src/domain/riskModel.ts` exporting `RISK_MODEL`, mirroring `docs/wave5-risk-scoring-model.md` §2 exactly. **Done:** test asserts the 8 factor weights sum to 100.
+- [ ] **5.2 Risk types.** Add `RiskScore`, `RiskFactor`, `RiskBand` to `src/domain/types.ts`. **Done:** `tsc --noEmit` clean; no change to Phase 1 types.
+- [ ] **5.3 `scoreRisk()` engine.** Pure fn computing R1–R8 factor points, total, band, and per‑factor reason — reading only `RISK_MODEL`, pure over inputs + `asOfDate`. **Done:** unit tests per factor branch; attribution test `sum(factors.points) === score`.
+- [ ] **5.4 Golden‑vector test.** The `docs/wave5-risk-scoring-model.md` §5 worked example scores **78 → CRITICAL** under v0.1 defaults. **Done:** one labeled golden‑vector test passes (update it when `RISK_MODEL` changes).
+- [ ] **5.5 `scorePopulation()` + audit.** Score the whole population, return sorted desc; emit one `AuditEvent` per scoring run. **Done:** integration test asserts sort order + audit event emitted.
+- [ ] **5.6 Seed band spread.** Extend the seed so the scored population spans all four bands (≥1 CRITICAL, ≥2 HIGH, non‑empty LOW). **Done:** band‑count snapshot test.
+- [ ] **5.7 High‑Risk Queue upgrade.** Generalize the Phase 1 queue to risk‑ranked: score, band chip, top‑3 factors, $, age; filters (component, band, status, funding type, $ range, age). **Done:** RTL test — default sort desc, a filter narrows rows, band chips render.
+- [ ] **5.8 Risk detail panel.** Break a line's score into factors (points + reason). **Done:** RTL test asserts the displayed breakdown sums to the score.
+- [ ] **5.9 Stale Obligation Explorer.** Aging buckets, expired‑PoP filter, low‑drawdown filter, sortable by recoverable $. **Done:** RTL test on filter + sort.
+- [ ] **5.10 No‑hardcoded‑numbers guard.** Test or lint rule asserting no scoring number is hard‑coded outside `RISK_MODEL`. **Done:** guard passes.
+- [ ] **5.11 Wave 5 demo integration test.** Encode the demo scenario: load → score → queue ranks CRITICAL/HIGH top with factors → filter to one component+band narrows. **Done:** test passes.
+- [ ] **5.12 Final gate.** **Done:** `npm run gate` exits 0; no Phase 1 regression; all Wave 5 boxes checked.
 
 ---
 
@@ -84,7 +101,7 @@ per‑component assignment progress table.
 
 **Data requirements.** `Campaign { id, name, objective, period, state, createdBy, createdAt }`;
 `Assignment { id, campaignId, component, udoIds[], dueDate, state }`. Lineage: assignment →
-campaign. Each gets audit events on create/transition.
+campaign. Audit events on create/transition.
 
 **Technical requirements.** Campaign state machine (pure reducer, unit‑tested transitions);
 population selectors reuse the Wave 5 risk queue; no auto‑advance of state without a user action.
@@ -98,7 +115,18 @@ set due dates → launch (Draft→Active) → campaign detail shows three assign
 - Campaign reducer tests cover every legal transition and reject illegal ones.
 - Creating a campaign from "top‑N by risk" produces assignments whose `udoIds` match the queue's top N.
 - Campaign + assignment create/transition each append exactly one audit event (test‑asserted).
-- `npm run gate` green; Wave 6 boxes checked.
+- `npm run gate` green; all Wave 6 tasks checked.
+
+### Tasks
+- [ ] **6.1 Campaign + Assignment types** in `types.ts`. **Done:** `tsc --noEmit` clean.
+- [ ] **6.2 Campaign state machine.** Pure reducer Draft→Active→Closing→Closed. **Done:** tests cover every legal transition and reject illegal ones.
+- [ ] **6.3 Population selectors.** Manual / saved filter / top‑N by risk, reusing the Wave 5 queue. **Done:** test asserts top‑N selection matches queue's top N.
+- [ ] **6.4 Assignment generation + due dates.** Split population into per‑component assignments with due dates. **Done:** unit test on assignment generation.
+- [ ] **6.5 Audit on campaign/assignment changes.** Create + transition each append one `AuditEvent`. **Done:** test‑asserted.
+- [ ] **6.6 Campaign list + create wizard UI.** **Done:** RTL test creates a campaign end‑to‑end.
+- [ ] **6.7 Campaign detail + progress UI.** State badge + per‑component progress table. **Done:** RTL test renders three assignments at 0%.
+- [ ] **6.8 Wave 6 demo integration test.** The demo scenario above. **Done:** test passes.
+- [ ] **6.9 Final gate.** **Done:** `npm run gate` 0 failures; no regression; Wave 6 boxes checked.
 
 ---
 
@@ -122,13 +150,13 @@ items. De‑ob opportunity list with lifecycle state.
 
 **Data requirements.** `Response { id, assignmentId, udoId, action: CONCUR|CONTEST|CORRECT,
 correctedStatus?, reason (required unless CONCUR), evidenceRefs[], state }`;
-`Escalation { id, udoId/assignmentId, trigger: OVERDUE|CONTESTED|HIGH_DOLLAR|MANUAL, level }`;
+`Escalation { id, target, trigger: OVERDUE|CONTESTED|HIGH_DOLLAR|MANUAL, level }`;
 `DeobOpportunity { udoId, state: IDENTIFIED|UNDER_REVIEW|CONFIRMED|REJECTED, estimatedRecoverable,
 disposition? }`. Lineage: response → assignment → campaign; de‑ob disposition → finding.
 
 **Technical requirements.** Pure escalation rule fn (`evaluateEscalations(asOfDate)`); response
-reducer enforces mandatory reason; de‑ob lifecycle reducer with human disposition + reason.
-All state changes audited.
+reducer enforces mandatory reason; de‑ob lifecycle reducer with human disposition + reason. All
+state changes audited.
 
 **Dependencies.** Wave 6 (assignments to respond to); Phase 1 disposition/audit discipline.
 
@@ -140,7 +168,18 @@ contested response → a stale line is confirmed as a de‑ob opportunity.
 - Contest/correct with empty reason is rejected; concur needs none (tests).
 - `evaluateEscalations` flags an overdue and a high‑$ item deterministically (tests).
 - De‑ob lifecycle transitions require a reason on CONFIRM/REJECT and append audit events.
-- `npm run gate` green; Wave 7 boxes checked.
+- `npm run gate` green; all Wave 7 tasks checked.
+
+### Tasks
+- [ ] **7.1 Response / Escalation / DeobOpportunity types.** **Done:** `tsc --noEmit` clean.
+- [ ] **7.2 Response reducer.** concur/contest/correct; mandatory reason on contest/correct. **Done:** tests — empty reason rejected, concur needs none.
+- [ ] **7.3 `evaluateEscalations()` pure fn.** OVERDUE/CONTESTED/HIGH_DOLLAR/MANUAL over `asOfDate`. **Done:** deterministic tests flag an overdue and a high‑$ item.
+- [ ] **7.4 De‑ob lifecycle reducer.** IDENTIFIED→UNDER_REVIEW→CONFIRMED/REJECTED, reason required on confirm/reject. **Done:** transition + reason tests.
+- [ ] **7.5 Audit + lineage on all changes.** **Done:** tests assert audit event per change and resolvable lineage links.
+- [ ] **7.6 Component Response Workspace UI.** Per‑line response + evidence attach + submit. **Done:** RTL test submits a response set.
+- [ ] **7.7 Escalation + De‑ob tracker UI.** Escalation banner; de‑ob opportunity list with state. **Done:** RTL tests.
+- [ ] **7.8 Wave 7 demo integration test.** The demo scenario above. **Done:** test passes.
+- [ ] **7.9 Final gate.** **Done:** `npm run gate` 0 failures; no regression; Wave 7 boxes checked.
 
 ---
 
@@ -158,7 +197,7 @@ de‑obligation opportunity reporting.
 - As an *Auditor*, I want to drill from any KPI to the lines and audit behind it.
 
 **UX requirements.** Portfolio dashboard: department KPIs, component scorecard grid, campaign
-completion, de‑ob $ rolled up, trend (using available snapshots). Every KPI is clickable to its
+completion, de‑ob $ rolled up, trend (using available snapshots). Every KPI clickable to its
 contributing lines; every line links to its audit trail.
 
 **Data requirements.** Aggregation views over UDOs/findings/risk/campaigns/responses/de‑ob;
@@ -175,10 +214,18 @@ de‑ob $, and a scorecard per component → clicks the FEMA exception count →
 exception lines → opens one line's audit trail.
 
 **Acceptance criteria (measurable).**
-- Each portfolio KPI equals the sum/aggregate of its source records (test‑asserted, no drift).
+- Each portfolio KPI equals the aggregate of its source records (test‑asserted, no drift).
 - Clicking a KPI navigates to exactly the contributing lines (RTL test).
 - Component scorecard values reconcile to per‑component engine output.
-- `npm run gate` green; Wave 8 boxes checked.
+- `npm run gate` green; all Wave 8 tasks checked.
+
+### Tasks
+- [ ] **8.1 Scorecard + aggregation types.** `ComponentScorecard` + portfolio KPI types. **Done:** `tsc --noEmit` clean.
+- [ ] **8.2 Pure aggregation fns.** Portfolio KPIs + per‑component scorecards over the store. **Done:** reconciliation tests — KPI === sum of sources.
+- [ ] **8.3 Portfolio dashboard UI.** KPIs, scorecard grid, campaign completion, de‑ob rollup. **Done:** RTL test asserts numbers match engine output.
+- [ ] **8.4 Drill‑down.** KPI → contributing lines → line audit trail. **Done:** RTL test navigates KPI to exactly the contributing lines.
+- [ ] **8.5 Wave 8 demo integration test.** The demo scenario above. **Done:** test passes.
+- [ ] **8.6 Final gate.** **Done:** `npm run gate` 0 failures; no regression; Wave 8 boxes checked.
 
 ---
 
@@ -198,12 +245,12 @@ drawdown/staleness forecasting · advanced portfolio management.
 **UX requirements.** Command‑center console: cross‑component heatmap, top movers, forecast panel
 clearly badged "Projection" with its inputs. Advanced filters and saved views.
 
-**Data requirements.** Time‑series snapshots of portfolio state; `Forecast { udoId/component,
-metric, projectedValue, horizon, basis }`. Lineage from forecast → inputs.
+**Data requirements.** Time‑series snapshots of portfolio state; `Forecast { target, metric,
+projectedValue, horizon, basis }`. Lineage from forecast → inputs.
 
 **Technical requirements.** Deterministic, explainable forecasting in MVP (e.g., trend/aging
 extrapolation as a pure function with documented method) — no opaque ML in the mock build; the
-function signature anticipates a future model‑backed implementation (see AWS future state §6.8).
+function signature anticipates a future model‑backed implementation (see AWS future state).
 
 **Dependencies.** Wave 8 (portfolio aggregates + history).
 
@@ -212,10 +259,19 @@ spike → forecast panel projects N stale obligations next quarter with the basi
 the lines driving the projection.
 
 **Acceptance criteria (measurable).**
-- Forecast function is deterministic and its output reproduces its documented method on the seed (test).
+- Forecast function is deterministic and reproduces its documented method on the seed (test).
 - Forecast UI always shows the "Projection" label and the basis (RTL test).
 - Cross‑component aggregates reconcile to Wave 8 outputs.
-- `npm run gate` green; Wave 9 boxes checked.
+- `npm run gate` green; all Wave 9 tasks checked.
+
+### Tasks
+- [ ] **9.1 Forecast + snapshot types.** `Forecast` + time‑series snapshot. **Done:** `tsc --noEmit` clean.
+- [ ] **9.2 Deterministic forecast fn.** Documented trend/aging method, pure. **Done:** test reproduces the documented method on the seed.
+- [ ] **9.3 Cross‑component analytics.** Aggregation reconciling to Wave 8 outputs. **Done:** reconciliation test.
+- [ ] **9.4 Command‑center console UI.** Heatmap + top movers. **Done:** RTL test renders the console.
+- [ ] **9.5 Forecast panel UI.** "Projection" label + basis always shown. **Done:** RTL test asserts label + basis present.
+- [ ] **9.6 Wave 9 demo integration test.** The demo scenario above. **Done:** test passes.
+- [ ] **9.7 Final gate.** **Done:** `npm run gate` 0 failures; no regression; Wave 9 boxes checked.
 
 ---
 
@@ -229,3 +285,4 @@ the lines driving the projection.
 - Re‑read `SPEC.md` when scope is unclear; new scope → edit SPEC first.
 - Never weaken/delete a test or a Phase 1 guardrail to go green.
 - Keep all engines free of React and of wall‑clock/random calls.
+- Work only the `### Tasks` checkboxes; the narrative above each list is context, not a task.
