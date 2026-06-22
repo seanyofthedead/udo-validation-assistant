@@ -76,7 +76,7 @@ one component and one band narrows the list.
 - [x] **5.7 High‑Risk Queue upgrade.** Generalize the Phase 1 queue to risk‑ranked: score, band chip, top‑3 factors, $, age; filters (component, band, status, funding type, $ range, age). **Done:** RTL test — default sort desc, a filter narrows rows, band chips render.
 - [x] **5.8 Risk detail panel.** Break a line's score into factors (points + reason). **Done:** RTL test asserts the displayed breakdown sums to the score.
 - [x] **5.9 Stale Obligation Explorer.** Aging buckets, expired‑PoP filter, low‑drawdown filter, sortable by recoverable $. **Done:** RTL test on filter + sort.
-- [ ] **5.10 No‑hardcoded‑numbers guard.** Test or lint rule asserting no scoring number is hard‑coded outside `RISK_MODEL`. **Done:** guard passes.
+- [x] **5.10 No‑hardcoded‑numbers guard.** Test or lint rule asserting no scoring number is hard‑coded outside `RISK_MODEL`. **Done:** guard passes.
 - [ ] **5.11 Wave 5 demo integration test.** Encode the demo scenario: load → score → queue ranks CRITICAL/HIGH top with factors → filter to one component+band narrows. **Done:** test passes.
 - [ ] **5.12 Final gate.** **Done:** `npm run gate` exits 0; no Phase 1 regression; all Wave 5 boxes checked.
 
