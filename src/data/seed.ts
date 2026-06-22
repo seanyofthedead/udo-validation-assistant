@@ -52,12 +52,16 @@ export const seedPopulation: UdoRecord[] = [
     vendor: 'Beacon Avionics',
     description: 'Navigation radar overhaul',
     fundingType: 'Procurement',
-    amountObligated: 300_000,
-    amountDisbursed: 297_000, // drawdown 0.99 -> FULLY_DRAWN contradiction
+    amountObligated: 1_500_000,
+    amountDisbursed: 1_485_000, // drawdown 0.99 -> FULLY_DRAWN contradiction
     reportedStatus: 'OPEN_ACTIVE',
-    obligationDate: '2024-03-10',
-    lastActivityDate: '2026-05-01',
-    periodOfPerformanceEnd: '2026-11-30',
+    // Large, fully-drawn, yet long-expired and dormant: still reported active.
+    // Verdict stays QUESTIONABLE (FULLY_DRAWN trigger, drawdown 0.99 so NOT a
+    // de-ob candidate); the staleness + magnitude lift its Wave 5 risk score
+    // into the CRITICAL band, giving the seed a populated top band.
+    obligationDate: '2023-03-10',
+    lastActivityDate: '2025-05-01', // > 365d inactive
+    periodOfPerformanceEnd: '2025-05-31', // expired > 365d
   },
   {
     id: 'UDO-USCG-0003',
@@ -336,7 +340,7 @@ export const seedEvidence: EvidenceItem[] = [
   ev('UDO-USCG-0001', 'INVOICE', 200_000, 'INV-U1'),
   ev('UDO-USCG-0001', 'GL'),
   ev('UDO-USCG-0002', 'PO'),
-  ev('UDO-USCG-0002', 'INVOICE', 297_000, 'INV-U2'),
+  ev('UDO-USCG-0002', 'INVOICE', 1_485_000, 'INV-U2'),
   ev('UDO-USCG-0002', 'GL'),
   ev('UDO-USCG-0003', 'PO'),
   ev('UDO-USCG-0003', 'INVOICE', 150_000, 'INV-U3'),

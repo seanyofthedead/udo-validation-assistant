@@ -87,8 +87,8 @@ describe('seed population: structure', () => {
             "PENDING_CLOSE": 2,
           },
           "evidenceRows": 59,
-          "totalDisbursed": 2877000,
-          "totalObligated": 11950000,
+          "totalDisbursed": 4065000,
+          "totalObligated": 13150000,
         }
       `);
   });

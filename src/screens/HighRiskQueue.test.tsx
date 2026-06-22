@@ -24,9 +24,9 @@ describe('HighRiskQueue', () => {
     // largest obligations first
     expect(ids.slice(0, 4)).toEqual([
       'UDO-CISA-0003', // $5.0M (de-ob candidate)
+      'UDO-USCG-0002', // $1.5M (QUESTIONABLE — fully drawn yet long stale)
       'UDO-FEMA-0002', // $1.0M (de-ob candidate)
       'UDO-CBP-0002', // $700k (de-ob candidate)
-      'UDO-USCG-0005', // $600k (de-ob candidate)
     ]);
   });
 

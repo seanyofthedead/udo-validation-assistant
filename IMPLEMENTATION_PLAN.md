@@ -72,7 +72,7 @@ one component and one band narrows the list.
 - [x] **5.3 `scoreRisk()` engine.** Pure fn computing R1–R8 factor points, total, band, and per‑factor reason — reading only `RISK_MODEL`, pure over inputs + `asOfDate`. **Done:** unit tests per factor branch; attribution test `sum(factors.points) === score`.
 - [x] **5.4 Golden‑vector test.** The `docs/wave5-risk-scoring-model.md` §5 worked example scores **78 → CRITICAL** under v0.1 defaults. **Done:** one labeled golden‑vector test passes (update it when `RISK_MODEL` changes).
 - [x] **5.5 `scorePopulation()` + audit.** Score the whole population, return sorted desc; emit one `AuditEvent` per scoring run. **Done:** integration test asserts sort order + audit event emitted.
-- [ ] **5.6 Seed band spread.** Extend the seed so the scored population spans all four bands (≥1 CRITICAL, ≥2 HIGH, non‑empty LOW). **Done:** band‑count snapshot test.
+- [x] **5.6 Seed band spread.** Extend the seed so the scored population spans all four bands (≥1 CRITICAL, ≥2 HIGH, non‑empty LOW). **Done:** band‑count snapshot test.
 - [ ] **5.7 High‑Risk Queue upgrade.** Generalize the Phase 1 queue to risk‑ranked: score, band chip, top‑3 factors, $, age; filters (component, band, status, funding type, $ range, age). **Done:** RTL test — default sort desc, a filter narrows rows, band chips render.
 - [ ] **5.8 Risk detail panel.** Break a line's score into factors (points + reason). **Done:** RTL test asserts the displayed breakdown sums to the score.
 - [ ] **5.9 Stale Obligation Explorer.** Aging buckets, expired‑PoP filter, low‑drawdown filter, sortable by recoverable $. **Done:** RTL test on filter + sort.
