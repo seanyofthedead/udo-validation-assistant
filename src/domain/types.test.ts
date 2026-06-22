@@ -23,6 +23,10 @@ import type {
   RiskBand,
   RiskFactor,
   RiskScore,
+  CampaignState,
+  AssignmentState,
+  Campaign,
+  Assignment,
 } from './types';
 
 describe('SPEC §5 data model: union literals', () => {
@@ -49,6 +53,16 @@ describe('SPEC §5 data model: union literals', () => {
   it('EvidenceType covers every evidence type', () => {
     const all: EvidenceType[] = ['PO', 'INVOICE', 'RECEIPT', 'MOD', 'GL'];
     expect(all).toHaveLength(5);
+  });
+
+  it('CampaignState covers the forward-only campaign lifecycle (Phase 3)', () => {
+    const all: CampaignState[] = ['DRAFT', 'ACTIVE', 'CLOSING', 'CLOSED'];
+    expect(all).toHaveLength(4);
+  });
+
+  it('AssignmentState covers per-assignment progress (Phase 3)', () => {
+    const all: AssignmentState[] = ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETE'];
+    expect(all).toHaveLength(3);
   });
 });
 
@@ -172,6 +186,34 @@ describe('SPEC §5 data model: interface shapes', () => {
     expect(risk.score).toBeLessThanOrEqual(100);
     expectTypeOf(risk.factors).toBeArray();
     expect(risk.factors[0].name).toBe('R1 verdict');
+  });
+
+  it('Campaign is a first-class entity with scope, state, and creation lineage (Phase 3)', () => {
+    const campaign: Campaign = {
+      id: 'CMP-2026-Q3-01',
+      name: 'Q3 UDO Review',
+      objective: 'Review the highest-risk open obligations before quarter-end close.',
+      period: 'Q3 FY2026',
+      state: 'DRAFT',
+      createdBy: 'manager@dhs.gov',
+      createdAt: '2026-06-22T00:00:00.000Z',
+    };
+    expect(campaign.state).toBe('DRAFT');
+    expectTypeOf(campaign.createdAt).toBeString();
+  });
+
+  it('Assignment links a component slice to a campaign with a due date and progress state (Phase 3)', () => {
+    const assignment: Assignment = {
+      id: 'ASG-2026-Q3-01-USCG',
+      campaignId: 'CMP-2026-Q3-01',
+      component: 'USCG',
+      udoIds: ['UDO-USCG-0001', 'UDO-USCG-0002'],
+      dueDate: '2026-07-15',
+      state: 'NOT_STARTED',
+    };
+    expect(assignment.campaignId).toBe('CMP-2026-Q3-01');
+    expectTypeOf(assignment.udoIds).toBeArray();
+    expect(assignment.state).toBe('NOT_STARTED');
   });
 
   it('AuditEvent records an actor, action, and detail; udoId optional', () => {

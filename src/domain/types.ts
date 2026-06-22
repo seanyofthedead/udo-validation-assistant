@@ -96,3 +96,34 @@ export interface RiskScore {
   factors: RiskFactor[]; // every point attributable to a factor (explainability)
   asOfDate: string; // ISO date the score was computed against
 }
+
+// --- Phase 3 (Wave 6) — Headquarters review campaigns ---------------------
+// Additive to the Phase 1/2 model. SPEC §5.3: a campaign is a first-class,
+// auditable entity that scopes a review, selects a population, and assigns
+// slices to components with due dates. The campaign state machine is forward-
+// only (Draft → Active → Closing → Closed); see src/domain/campaign.ts.
+
+export type CampaignState = 'DRAFT' | 'ACTIVE' | 'CLOSING' | 'CLOSED';
+
+// Per-assignment progress lifecycle. Components act on assignments in Wave 7
+// (responses); in Wave 6 a fresh assignment starts NOT_STARTED (0% progress).
+export type AssignmentState = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETE';
+
+export interface Campaign {
+  id: string; // e.g. "CMP-2026-Q3-01"
+  name: string; // e.g. "Q3 UDO Review"
+  objective: string; // plain-language scope statement
+  period: string; // e.g. "Q3 FY2026"
+  state: CampaignState;
+  createdBy: string; // actor who created it (human-in-the-loop)
+  createdAt: string; // ISO timestamp; supplied by the caller (engines stay pure)
+}
+
+export interface Assignment {
+  id: string; // e.g. "ASG-2026-Q3-01-USCG"
+  campaignId: string; // lineage: assignment → campaign
+  component: Component;
+  udoIds: string[]; // the slice of the population this component owns
+  dueDate: string; // ISO date
+  state: AssignmentState;
+}
