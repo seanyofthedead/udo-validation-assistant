@@ -9,7 +9,10 @@
 //     and never mutates a prior entry.
 
 import type {
+  Assignment,
   AuditEvent,
+  Campaign,
+  CampaignState,
   CrgRule,
   DeobligationFlag,
   Disposition,
@@ -22,6 +25,7 @@ import type {
 } from '../domain/types';
 import { runValidation, type PriorYearAnomalyResult } from '../domain/engine';
 import { scorePopulation } from '../domain/riskEngine';
+import { canTransitionCampaign, transitionCampaign } from '../domain/campaign';
 
 export interface AppState {
   asOfDate: string;
@@ -33,6 +37,8 @@ export interface AppState {
   deobFlags: DeobligationFlag[];
   anomalies: PriorYearAnomalyResult[];
   riskScores: RiskScore[]; // Wave 5 — ranked by score desc (scorePopulation)
+  campaigns: Campaign[]; // Wave 6 — HQ review campaigns (first-class, audited)
+  assignments: Assignment[]; // Wave 6 — per-component slices of a campaign
   dispositions: Disposition[];
   auditLog: AuditEvent[];
 }
@@ -75,6 +81,8 @@ export function createInitialState(input: InitInputs): AppState {
     deobFlags: run.deobFlags,
     anomalies: run.anomalies,
     riskScores: risk.scores,
+    campaigns: [], // Wave 6 — campaigns are created by humans at runtime, not seeded
+    assignments: [],
     dispositions: [],
     auditLog: [...run.audit, ...risk.audit], // AI actions; human actions append after
   };
@@ -94,6 +102,17 @@ export type AppAction =
       type: 'RECORD_EXPORT';
       artifact: string;
       format: 'CSV' | 'JSON';
+      user: string;
+      timestamp: string;
+    }
+  // Wave 6 — campaign lifecycle (SPEC §5.3). The UI builds the campaign and its
+  // assignments with the pure domain helpers (generateAssignments etc.) and
+  // dispatches the result; the reducer records them and appends the audit event.
+  | { type: 'CREATE_CAMPAIGN'; campaign: Campaign; assignments: Assignment[] }
+  | {
+      type: 'TRANSITION_CAMPAIGN';
+      campaignId: string;
+      to: CampaignState;
       user: string;
       timestamp: string;
     };
@@ -183,6 +202,54 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         timestamp: action.timestamp,
       });
       return { ...state, auditLog: appendAudit(state.auditLog, event) };
+    }
+
+    case 'CREATE_CAMPAIGN': {
+      // SPEC §5.3 — a campaign and its assignments are recorded together as one
+      // creation act, appending exactly one audit event (the campaign carries the
+      // creator + creation time, so the event is fully attributable). The platform
+      // never auto-advances state: a fresh campaign is DRAFT until a human acts.
+      const { campaign, assignments } = action;
+      const udoCount = assignments.reduce((n, a) => n + a.udoIds.length, 0);
+      const event: AuditEvent = {
+        timestamp: campaign.createdAt,
+        actor: 'HUMAN',
+        action: 'CAMPAIGN_CREATE',
+        detail:
+          `${campaign.createdBy} created campaign "${campaign.name}" (${campaign.id}) for ` +
+          `${campaign.period}: ${udoCount} obligation(s) across ${assignments.length} ` +
+          `assignment(s).`,
+      };
+      return {
+        ...state,
+        campaigns: [...state.campaigns, campaign],
+        assignments: [...state.assignments, ...assignments],
+        auditLog: appendAudit(state.auditLog, event),
+      };
+    }
+
+    case 'TRANSITION_CAMPAIGN': {
+      // SPEC §5.3 — move a campaign forward (Draft→Active→Closing→Closed). An
+      // illegal transition is a no-op (no state change, no audit entry), the same
+      // discipline as a blank-reason override; a legal one appends exactly one
+      // audit event. The pure state machine (canTransition/transition) is the
+      // single source of truth for legality.
+      const current = state.campaigns.find((c) => c.id === action.campaignId);
+      if (!current || !canTransitionCampaign(current.state, action.to)) return state;
+
+      const from = current.state;
+      const moved = transitionCampaign(current, action.to);
+      const event: AuditEvent = {
+        timestamp: action.timestamp,
+        actor: 'HUMAN',
+        action: 'CAMPAIGN_TRANSITION',
+        detail: `${action.user} moved campaign ${moved.id} from ${from} to ${moved.state}.`,
+      };
+      return {
+        ...state,
+        campaigns: state.campaigns.map((c) => (c.id === moved.id ? moved : c)),
+        auditLog: appendAudit(state.auditLog, event),
+      };
     }
 
     default:
