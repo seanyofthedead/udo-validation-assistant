@@ -45,14 +45,18 @@ describe('Wave 6 demo scenario', () => {
     fireEvent.click(q.getByRole('button', { name: /create campaign/i }));
 
     // The detail shows three per-component assignments, each at 0%, due on DUE.
-    const progress = q.getByLabelText('Assignment progress');
-    const rows = within(progress).getAllByRole('row').slice(1);
+    const progress = container.querySelector<HTMLElement>(
+      'table[aria-label="Assignment progress"]',
+    )!;
+    const rows = Array.from(progress.querySelectorAll('tbody tr'));
     expect(rows).toHaveLength(3);
     for (const r of rows) {
       expect(r.querySelector('[data-progress]')?.getAttribute('data-progress')).toBe('0');
-      expect(within(r).getByText(DUE)).toBeInTheDocument();
+      expect(r.textContent).toContain(DUE);
     }
-    expect(container.querySelector('[data-overall-progress]')?.getAttribute('data-overall-progress')).toBe('0');
+    expect(
+      container.querySelector('[data-overall-progress]')?.getAttribute('data-overall-progress'),
+    ).toBe('0');
 
     // Launch: Draft → Active. The detail reflects the new state and offers the
     // next legal transition (Closing), not a relaunch.

@@ -2,8 +2,8 @@
 // Task 6.7 — Campaign Detail + progress. A campaign scoped to three components
 // (USCG/TSA/FEMA) renders three per-component assignments, each at 0% while
 // freshly created (NOT_STARTED), with a 0% overall and a launch action. Built by
-// driving the create wizard so the detail reads real store state. Queries are
-// container-scoped (the suite runs with isolate: false).
+// driving the create wizard so the detail reads real store state. Table queries
+// are scoped via querySelector (the suite runs with isolate: false).
 
 import './../test/setup';
 import { describe, it, expect, afterEach } from 'vitest';
@@ -31,6 +31,11 @@ function createThreeComponentCampaign(container: HTMLElement) {
   fireEvent.click(q.getByRole('button', { name: /create campaign/i }));
 }
 
+function progressRows(container: HTMLElement): HTMLElement[] {
+  const table = container.querySelector<HTMLElement>('table[aria-label="Assignment progress"]');
+  return table ? Array.from(table.querySelectorAll('tbody tr')) : [];
+}
+
 describe('Campaign Detail (task 6.7)', () => {
   it('renders three per-component assignments, each at 0%, with 0% overall', () => {
     const { container } = renderWithProviders(
@@ -41,8 +46,7 @@ describe('Campaign Detail (task 6.7)', () => {
     );
     createThreeComponentCampaign(container);
 
-    const table = within(container).getByLabelText('Assignment progress');
-    const rows = within(table).getAllByRole('row').slice(1); // drop header
+    const rows = progressRows(container);
     expect(rows).toHaveLength(3);
 
     const components = rows.map((r) => r.getAttribute('data-component')).sort();
@@ -71,8 +75,7 @@ describe('Campaign Detail (task 6.7)', () => {
     expect(container.querySelector('.badge[data-state="DRAFT"]')).not.toBeNull();
 
     // The only legal next state from DRAFT is ACTIVE.
-    const launch = container.querySelector('[data-transition-to="ACTIVE"]');
-    expect(launch).not.toBeNull();
+    expect(container.querySelector('[data-transition-to="ACTIVE"]')).not.toBeNull();
     expect(container.querySelector('[data-transition-to="CLOSED"]')).toBeNull();
   });
 });
