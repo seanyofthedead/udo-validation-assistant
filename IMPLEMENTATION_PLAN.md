@@ -67,7 +67,7 @@ one component and one band narrows the list.
 - `npm run gate` green; new tests added; all Wave 5 tasks checked.
 
 ### Tasks
-- [ ] **5.1 RISK_MODEL constant.** Create `src/domain/riskModel.ts` exporting `RISK_MODEL`, mirroring `docs/wave5-risk-scoring-model.md` §2 exactly. **Done:** test asserts the 8 factor weights sum to 100.
+- [x] **5.1 RISK_MODEL constant.** Create `src/domain/riskModel.ts` exporting `RISK_MODEL`, mirroring `docs/wave5-risk-scoring-model.md` §2 exactly. **Done:** test asserts the 8 factor weights sum to 100.
 - [ ] **5.2 Risk types.** Add `RiskScore`, `RiskFactor`, `RiskBand` to `src/domain/types.ts`. **Done:** `tsc --noEmit` clean; no change to Phase 1 types.
 - [ ] **5.3 `scoreRisk()` engine.** Pure fn computing R1–R8 factor points, total, band, and per‑factor reason — reading only `RISK_MODEL`, pure over inputs + `asOfDate`. **Done:** unit tests per factor branch; attribution test `sum(factors.points) === score`.
 - [ ] **5.4 Golden‑vector test.** The `docs/wave5-risk-scoring-model.md` §5 worked example scores **78 → CRITICAL** under v0.1 defaults. **Done:** one labeled golden‑vector test passes (update it when `RISK_MODEL` changes).
