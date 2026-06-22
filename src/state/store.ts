@@ -15,11 +15,13 @@ import type {
   Disposition,
   EvidenceItem,
   PriorYearStat,
+  RiskScore,
   UdoRecord,
   ValidationFinding,
   Verdict,
 } from '../domain/types';
 import { runValidation, type PriorYearAnomalyResult } from '../domain/engine';
+import { scorePopulation } from '../domain/riskEngine';
 
 export interface AppState {
   asOfDate: string;
@@ -30,6 +32,7 @@ export interface AppState {
   findings: ValidationFinding[];
   deobFlags: DeobligationFlag[];
   anomalies: PriorYearAnomalyResult[];
+  riskScores: RiskScore[]; // Wave 5 — ranked by score desc (scorePopulation)
   dispositions: Disposition[];
   auditLog: AuditEvent[];
 }
@@ -51,6 +54,17 @@ export function createInitialState(input: InitInputs): AppState {
     input.priorStats,
     input.asOfDate,
   );
+  // Wave 5 — score the population for review-worthiness in the same init pass.
+  // scorePopulation appends exactly one RISK_SCORE audit event, so the running
+  // app records the ranking the same way it records validation (SPEC §7).
+  const risk = scorePopulation(
+    input.population,
+    run.findings,
+    run.anomalies,
+    input.evidence,
+    input.rules,
+    input.asOfDate,
+  );
   return {
     asOfDate: input.asOfDate,
     population: input.population,
@@ -60,8 +74,9 @@ export function createInitialState(input: InitInputs): AppState {
     findings: run.findings,
     deobFlags: run.deobFlags,
     anomalies: run.anomalies,
+    riskScores: risk.scores,
     dispositions: [],
-    auditLog: run.audit, // seeded with the AI's actions; human actions append after
+    auditLog: [...run.audit, ...risk.audit], // AI actions; human actions append after
   };
 }
 

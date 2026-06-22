@@ -1,45 +1,80 @@
 // @vitest-environment jsdom
-// Task 3.4 — High-Risk Queue: ordering by $ desc; clean VALID lines excluded.
+// Task 5.7 — High-Risk Queue (risk-ranked). Generalizes the Phase 1 queue
+// (SPEC §5.2): the whole population, ranked by risk score descending, with a
+// band chip and top factors per row, and filters that narrow the worklist.
 
 import '../test/setup';
 import { describe, it, expect, afterEach } from 'vitest';
-import { cleanup } from '@testing-library/react';
+import { cleanup, fireEvent } from '@testing-library/react';
 import { renderWithProviders } from '../test/renderWithProviders';
 import { HighRiskQueue } from './HighRiskQueue';
+import { seedPopulation } from '../data';
 
 afterEach(cleanup);
 
-function bodyRowIds(container: HTMLElement): string[] {
-  return Array.from(container.querySelectorAll('tbody tr')).map(
-    (tr) => tr.getAttribute('data-udo-id') ?? '',
+function bodyRows(container: HTMLElement): HTMLElement[] {
+  return Array.from(container.querySelectorAll('tbody tr'));
+}
+
+function rowScores(container: HTMLElement): number[] {
+  return bodyRows(container).map((tr) =>
+    Number(tr.querySelector('[data-score]')?.getAttribute('data-score') ?? ''),
   );
 }
 
-describe('HighRiskQueue', () => {
-  it('includes questionable lines and de-ob candidates, ranked by obligated $ desc', () => {
+describe('HighRiskQueue (risk-ranked)', () => {
+  it('lists the whole population, ranked by risk score descending by default', () => {
     const { container } = renderWithProviders(<HighRiskQueue />);
-    const ids = bodyRowIds(container);
-    // 4 QUESTIONABLE + 4 de-ob candidates = 8 rows
-    expect(ids).toHaveLength(8);
-    // largest obligations first
-    expect(ids.slice(0, 4)).toEqual([
-      'UDO-CISA-0003', // $5.0M (de-ob candidate)
-      'UDO-USCG-0002', // $1.5M (QUESTIONABLE — fully drawn yet long stale)
-      'UDO-FEMA-0002', // $1.0M (de-ob candidate)
-      'UDO-CBP-0002', // $700k (de-ob candidate)
-    ]);
+    const rows = bodyRows(container);
+    expect(rows).toHaveLength(seedPopulation.length);
+
+    const scores = rowScores(container);
+    for (let i = 1; i < scores.length; i++) {
+      expect(scores[i - 1]).toBeGreaterThanOrEqual(scores[i]); // non-increasing
+    }
   });
 
-  it('excludes clean VALID lines that are not de-ob candidates', () => {
+  it('renders a risk-band chip on every row', () => {
     const { container } = renderWithProviders(<HighRiskQueue />);
-    const ids = bodyRowIds(container);
-    // UDO-USCG-0001 is a clean VALID line -> must not appear
-    expect(ids).not.toContain('UDO-USCG-0001');
-    expect(ids).not.toContain('UDO-FEMA-0001');
+    const chips = container.querySelectorAll('tbody tr [data-band]');
+    expect(chips).toHaveLength(seedPopulation.length);
+    // The top row is the CRITICAL line the seed is engineered to produce.
+    const firstBand = bodyRows(container)[0].getAttribute('data-band');
+    expect(firstBand).toBe('CRITICAL');
   });
 
-  it('includes a de-ob candidate even though its verdict is VALID', () => {
+  it('shows up to three contributing factors per row', () => {
     const { container } = renderWithProviders(<HighRiskQueue />);
-    expect(bodyRowIds(container)).toContain('UDO-CISA-0003');
+    for (const tr of bodyRows(container)) {
+      expect(tr.querySelectorAll('.factor-chip').length).toBeLessThanOrEqual(3);
+    }
+  });
+
+  it('a band filter narrows the rows', () => {
+    const { container, getByLabelText } = renderWithProviders(<HighRiskQueue />);
+    const before = bodyRows(container).length;
+
+    fireEvent.change(getByLabelText('Risk band'), { target: { value: 'CRITICAL' } });
+
+    const after = bodyRows(container);
+    expect(after.length).toBeLessThan(before);
+    expect(after.length).toBeGreaterThan(0);
+    for (const tr of after) expect(tr.getAttribute('data-band')).toBe('CRITICAL');
+  });
+
+  it('a component filter narrows the rows to one component', () => {
+    const { container, getByLabelText } = renderWithProviders(<HighRiskQueue />);
+    fireEvent.change(getByLabelText('Component'), { target: { value: 'USCG' } });
+    const ids = bodyRows(container).map((tr) => tr.getAttribute('data-udo-id') ?? '');
+    expect(ids.length).toBeGreaterThan(0);
+    expect(ids.every((id) => id.startsWith('UDO-USCG-'))).toBe(true);
+  });
+
+  it('a dollar-floor filter excludes smaller obligations', () => {
+    const { container, getByLabelText } = renderWithProviders(<HighRiskQueue />);
+    const before = bodyRows(container).length;
+    fireEvent.change(getByLabelText('Minimum obligated dollars'), { target: { value: '1000000' } });
+    const after = bodyRows(container).length;
+    expect(after).toBeLessThan(before);
   });
 });

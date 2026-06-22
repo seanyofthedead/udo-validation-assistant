@@ -330,3 +330,56 @@ body {
   background: #e2e2e2;
   color: #555;
 }
+
+/* Risk band chips (Wave 5) — LOW green … CRITICAL red */
+.band-low {
+  background: #d6f0d6;
+  color: #1d6b1d;
+}
+
+.band-medium {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.band-high {
+  background: #ffd9b0;
+  color: #8a4b00;
+}
+
+.band-critical {
+  background: #f8d2d6;
+  color: #842029;
+}
+
+/* Risk score + inline factor chips */
+.score-cell {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.factor-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+}
+
+.factor-chip {
+  display: inline-block;
+  padding: 0.05rem 0.4rem;
+  border-radius: 4px;
+  background: #eef1f5;
+  color: #333;
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.filters .range-inputs {
+  display: inline-flex;
+  gap: 0.3rem;
+}
+
+.filters input[type='number'] {
+  font: inherit;
+  width: 7rem;
+}
