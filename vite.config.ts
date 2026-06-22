@@ -17,5 +17,19 @@ export default defineConfig({
     // jsdom is heavy to initialize; keeping it off the hot path keeps the loop's
     // verification gate fast and reliable.
     environment: 'node',
+    // On this (slow, Windows) machine the default many-workers-in-parallel setup
+    // floods the CPU: workers miss the startup handshake ("Timeout waiting for
+    // worker to respond") and, worse, the affected test file's tests silently
+    // don't run, so the gate is non-deterministic about what it actually checks.
+    //
+    // `isolate: false` reuses a single long-lived worker per environment instead
+    // of spawning (and re-spawning) one per test file, so the startup storm — and
+    // the repeated, very slow jsdom environment setup — disappears. The domain,
+    // state, and export layers are pure (no module-level mutable singletons; state
+    // lives in React context), and RTL's afterEach cleanup resets the DOM between
+    // tests, so sharing a worker across files is safe here.
+    pool: 'threads',
+    fileParallelism: false,
+    isolate: false,
   },
 });
