@@ -20,6 +20,7 @@
 
 import { RISK_MODEL } from './riskModel';
 import type {
+  AuditEvent,
   CrgRule,
   EvidenceItem,
   RiskBand,
@@ -195,4 +196,61 @@ export function scoreRisk(
   ];
   const score = factors.reduce((sum, f) => sum + f.points, 0);
   return { udoId: udo.id, score, band: bandForScore(score), factors, asOfDate };
+}
+
+/** Result of scoring a whole population: ranked scores + the run's audit trail. */
+export interface RiskRun {
+  scores: RiskScore[]; // sorted by score descending (ties broken by udoId)
+  audit: AuditEvent[]; // exactly one event summarizing the scoring run
+}
+
+/**
+ * SPEC §5.1 / §7 — score an entire population for review-worthiness. For each
+ * UDO it pairs the line with its validation finding (by udoId) and its
+ * component's prior-year anomaly result, scores it, then returns the scores
+ * sorted by score descending (deterministic tie-break on udoId). Appends exactly
+ * one immutable AuditEvent per run (the platform proposes; humans dispose — this
+ * records that the AI ranked the population). Pure over inputs + `asOfDate`.
+ */
+export function scorePopulation(
+  population: UdoRecord[],
+  findings: ValidationFinding[],
+  anomalies: PriorYearAnomalyResult[],
+  evidence: EvidenceItem[],
+  rules: CrgRule[],
+  asOfDate: string,
+): RiskRun {
+  const findingById = new Map(findings.map((f) => [f.udoId, f]));
+  const anomalyByComponent = new Map(anomalies.map((a) => [a.component, a]));
+
+  const scores: RiskScore[] = population.map((udo) => {
+    const finding = findingById.get(udo.id);
+    if (!finding) throw new Error(`scorePopulation: no validation finding for ${udo.id}`);
+    return scoreRisk(
+      udo,
+      finding,
+      anomalyByComponent.get(udo.component),
+      evidence,
+      rules,
+      asOfDate,
+    );
+  });
+
+  scores.sort((a, b) => b.score - a.score || a.udoId.localeCompare(b.udoId));
+
+  const bandMix: Record<RiskBand, number> = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 };
+  for (const s of scores) bandMix[s.band]++;
+
+  const audit: AuditEvent[] = [
+    {
+      timestamp: `${asOfDate}T00:00:00.000Z`,
+      actor: 'AI',
+      action: 'RISK_SCORE',
+      detail:
+        `Scored ${scores.length} UDO(s) for risk as of ${asOfDate}. Bands: ` +
+        `${bandMix.CRITICAL} CRITICAL, ${bandMix.HIGH} HIGH, ${bandMix.MEDIUM} MEDIUM, ${bandMix.LOW} LOW.`,
+    },
+  ];
+
+  return { scores, audit };
 }
