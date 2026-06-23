@@ -14,10 +14,15 @@ import type {
   Campaign,
   CampaignState,
   CrgRule,
+  DeobDisposition,
+  DeobOpportunity,
+  DeobState,
   DeobligationFlag,
   Disposition,
+  Escalation,
   EvidenceItem,
   PriorYearStat,
+  Response,
   RiskScore,
   UdoRecord,
   ValidationFinding,
@@ -26,6 +31,15 @@ import type {
 import { runValidation, type PriorYearAnomalyResult } from '../domain/engine';
 import { scorePopulation } from '../domain/riskEngine';
 import { canTransitionCampaign, transitionCampaign } from '../domain/campaign';
+import { reduceResponses, type ResponseDraft } from '../domain/response';
+import { evaluateEscalations } from '../domain/escalation';
+import {
+  canTransitionDeob,
+  identifyDeobOpportunities,
+  isTerminalDeobState,
+  transitionDeob,
+} from '../domain/deob';
+import type { AssignmentState } from '../domain/types';
 
 export interface AppState {
   asOfDate: string;
@@ -39,6 +53,9 @@ export interface AppState {
   riskScores: RiskScore[]; // Wave 5 — ranked by score desc (scorePopulation)
   campaigns: Campaign[]; // Wave 6 — HQ review campaigns (first-class, audited)
   assignments: Assignment[]; // Wave 6 — per-component slices of a campaign
+  responses: Response[]; // Wave 7 — component per-line answers (concur/contest/correct)
+  escalations: Escalation[]; // Wave 7 — items needing attention (overdue/contested/high-$)
+  deobOpportunities: DeobOpportunity[]; // Wave 7 — de-ob candidates under disposition
   dispositions: Disposition[];
   auditLog: AuditEvent[];
 }
@@ -71,6 +88,20 @@ export function createInitialState(input: InitInputs): AppState {
     input.rules,
     input.asOfDate,
   );
+  // Wave 7 — surface the Phase 1 de-ob candidates as lifecycle opportunities
+  // (SPEC §5.7). Identification is a machine action, so it appends one AI audit
+  // event, mirroring how validation and risk scoring record their runs.
+  const deobOpportunities = identifyDeobOpportunities(run.deobFlags);
+  const deobIdentifyAudit: AuditEvent[] = [
+    {
+      timestamp: `${input.asOfDate}T00:00:00.000Z`,
+      actor: 'AI',
+      action: 'DEOB_IDENTIFY',
+      detail:
+        `Identified ${deobOpportunities.length} de-obligation opportunity(ies) from the ` +
+        `de-ob flags as of ${input.asOfDate}.`,
+    },
+  ];
   return {
     asOfDate: input.asOfDate,
     population: input.population,
@@ -83,8 +114,12 @@ export function createInitialState(input: InitInputs): AppState {
     riskScores: risk.scores,
     campaigns: [], // Wave 6 — campaigns are created by humans at runtime, not seeded
     assignments: [],
+    responses: [], // Wave 7 — components answer at runtime, not seeded
+    escalations: [], // Wave 7 — raised by evaluation at runtime
+    deobOpportunities, // Wave 7 — IDENTIFIED from the de-ob flags
     dispositions: [],
-    auditLog: [...run.audit, ...risk.audit], // AI actions; human actions append after
+    // AI actions (validation, risk, de-ob identification); human actions append after.
+    auditLog: [...run.audit, ...risk.audit, ...deobIdentifyAudit],
   };
 }
 
@@ -115,11 +150,49 @@ export type AppAction =
       to: CampaignState;
       user: string;
       timestamp: string;
+    }
+  // Wave 7 — component collaboration (SPEC §5.4, §5.7). The component submits a
+  // per-line response (the reducer enforces the mandatory-reason discipline); HQ
+  // validates it; escalations are evaluated; de-ob opportunities are dispositioned.
+  | { type: 'SUBMIT_RESPONSE'; draft: ResponseDraft; user: string; timestamp: string }
+  | { type: 'VALIDATE_RESPONSE'; responseId: string; user: string; timestamp: string }
+  | { type: 'RAISE_ESCALATIONS'; manualFlags?: string[]; timestamp: string }
+  | {
+      type: 'TRANSITION_DEOB';
+      udoId: string;
+      to: DeobState;
+      reason: string;
+      user: string;
+      timestamp: string;
     };
 
 /** Append an event to the immutable audit log (new array; no mutation). */
 function appendAudit(log: AuditEvent[], event: AuditEvent): AuditEvent[] {
   return [...log, event];
+}
+
+/**
+ * Derive an assignment's progress from its responses (Wave 7). A line counts as
+ * answered once its response is submitted or validated. None answered →
+ * NOT_STARTED; all answered → COMPLETE; some → IN_PROGRESS. This keeps the
+ * Wave 6 progress table (and SPEC §5.4's Assigned → In Progress → Submitted
+ * lifecycle) honest as responses land, without a separate human action.
+ */
+function assignmentStateFromResponses(
+  assignment: Assignment,
+  responses: Response[],
+): AssignmentState {
+  const answered = assignment.udoIds.filter((udoId) =>
+    responses.some(
+      (r) =>
+        r.assignmentId === assignment.id &&
+        r.udoId === udoId &&
+        (r.state === 'SUBMITTED' || r.state === 'VALIDATED'),
+    ),
+  ).length;
+  if (answered === 0) return 'NOT_STARTED';
+  if (answered === assignment.udoIds.length) return 'COMPLETE';
+  return 'IN_PROGRESS';
 }
 
 /**
@@ -248,6 +321,131 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         campaigns: state.campaigns.map((c) => (c.id === moved.id ? moved : c)),
+        auditLog: appendAudit(state.auditLog, event),
+      };
+    }
+
+    case 'SUBMIT_RESPONSE': {
+      // SPEC §5.4 — a component answers a line. The pure response reducer enforces
+      // the mandatory-reason discipline: a CONTEST/CORRECT with a blank reason (or
+      // a CORRECT with no corrected status) is rejected, so reduceResponses returns
+      // the same array — we treat that as a no-op (no audit entry), the same way a
+      // blank-reason override is a no-op. An accepted response advances the owning
+      // assignment's progress and appends exactly one audit event.
+      const nextResponses = reduceResponses(state.responses, action.draft, 'SUBMITTED');
+      if (nextResponses === state.responses) return state; // rejected — no-op
+
+      const { draft } = action;
+      const assignments = state.assignments.map((a) =>
+        a.id === draft.assignmentId
+          ? { ...a, state: assignmentStateFromResponses(a, nextResponses) }
+          : a,
+      );
+      const correctionNote =
+        draft.action === 'CORRECT' ? ` Proposed status: ${draft.correctedStatus}.` : '';
+      const reasonNote = draft.action === 'CONCUR' ? '' : ` Reason: ${draft.reason.trim()}`;
+      const event: AuditEvent = {
+        timestamp: action.timestamp,
+        actor: 'HUMAN',
+        action: 'RESPONSE_SUBMIT',
+        udoId: draft.udoId,
+        detail:
+          `${action.user} submitted a ${draft.action} response on ${draft.udoId} ` +
+          `(assignment ${draft.assignmentId}).${correctionNote}${reasonNote}`,
+      };
+      return {
+        ...state,
+        responses: nextResponses,
+        assignments,
+        auditLog: appendAudit(state.auditLog, event),
+      };
+    }
+
+    case 'VALIDATE_RESPONSE': {
+      // SPEC §5.4 — HQ validates a submitted response so concurrence isn't
+      // rubber-stamped. Only a SUBMITTED response can be validated; anything else
+      // (unknown id, already validated/draft) is a no-op. Appends one audit event.
+      const target = state.responses.find((r) => r.id === action.responseId);
+      if (!target || target.state !== 'SUBMITTED') return state;
+
+      const event: AuditEvent = {
+        timestamp: action.timestamp,
+        actor: 'HUMAN',
+        action: 'RESPONSE_VALIDATE',
+        udoId: target.udoId,
+        detail:
+          `${action.user} validated the ${target.action} response on ${target.udoId} ` +
+          `(assignment ${target.assignmentId}).`,
+      };
+      return {
+        ...state,
+        responses: state.responses.map((r) =>
+          r.id === target.id ? { ...r, state: 'VALIDATED' } : r,
+        ),
+        auditLog: appendAudit(state.auditLog, event),
+      };
+    }
+
+    case 'RAISE_ESCALATIONS': {
+      // SPEC §4 — re-evaluate which lines under review need attention as of the
+      // store's asOfDate. The pure engine proposes; this records the proposal as a
+      // single AI audit event (mirroring the risk-scoring run). Replaces the prior
+      // escalation set so the list always reflects the current world.
+      const escalations = evaluateEscalations(
+        state.assignments,
+        state.responses,
+        state.population,
+        state.asOfDate,
+        action.manualFlags ?? [],
+      );
+      const event: AuditEvent = {
+        timestamp: action.timestamp,
+        actor: 'AI',
+        action: 'ESCALATE',
+        detail:
+          `Evaluated escalations as of ${state.asOfDate}: ${escalations.length} item(s) ` +
+          `flagged (overdue / contested / high-dollar / manual).`,
+      };
+      return { ...state, escalations, auditLog: appendAudit(state.auditLog, event) };
+    }
+
+    case 'TRANSITION_DEOB': {
+      // SPEC §5.7 — move a de-ob opportunity through its lifecycle. The pure state
+      // machine is the single source of legality; a terminal CONFIRM/REJECT
+      // requires a non-blank reason. An illegal transition or a blank-reason
+      // disposition is a no-op (no state change, no audit), the same discipline as
+      // a blank-reason override. A legal change appends exactly one audit event.
+      const current = state.deobOpportunities.find((o) => o.udoId === action.udoId);
+      if (!current || !canTransitionDeob(current.state, action.to)) return state;
+
+      const terminal = isTerminalDeobState(action.to);
+      if (terminal && action.reason.trim() === '') return state; // mandatory reason
+
+      const disposition: DeobDisposition | undefined = terminal
+        ? {
+            action: action.to === 'CONFIRMED' ? 'CONFIRM' : 'REJECT',
+            reason: action.reason.trim(),
+            user: action.user,
+            timestamp: action.timestamp,
+          }
+        : undefined;
+
+      const moved = transitionDeob(current, action.to, disposition);
+      const reasonNote = terminal ? ` Reason: ${action.reason.trim()}` : '';
+      const event: AuditEvent = {
+        timestamp: action.timestamp,
+        actor: 'HUMAN',
+        action: 'DEOB_TRANSITION',
+        udoId: action.udoId,
+        detail:
+          `${action.user} moved de-ob opportunity ${action.udoId} from ${current.state} to ` +
+          `${moved.state}.${reasonNote}`,
+      };
+      return {
+        ...state,
+        deobOpportunities: state.deobOpportunities.map((o) =>
+          o.udoId === moved.udoId ? moved : o,
+        ),
         auditLog: appendAudit(state.auditLog, event),
       };
     }
