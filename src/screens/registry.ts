@@ -9,6 +9,7 @@ export type ScreenId =
   | 'stale-explorer'
   | 'campaigns'
   | 'campaign-detail'
+  | 'component-workspace'
   | 'detail'
   | 'review'
   | 'reporting';
@@ -24,6 +25,7 @@ export const SCREENS: ScreenMeta[] = [
   { id: 'high-risk', label: 'High-Risk Queue' },
   { id: 'stale-explorer', label: 'Stale Obligation Explorer' },
   { id: 'campaigns', label: 'Review Campaigns' },
+  { id: 'component-workspace', label: 'Component Workspace' },
   { id: 'detail', label: 'UDO Detail' },
   { id: 'review', label: 'Review Workspace' },
   { id: 'reporting', label: 'Reporting / Export' },

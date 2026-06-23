@@ -11,6 +11,7 @@ import { HighRiskQueue } from './HighRiskQueue';
 import { StaleExplorer } from './StaleExplorer';
 import { Campaigns } from './Campaigns';
 import { CampaignDetail } from './CampaignDetail';
+import { ComponentWorkspace } from './ComponentWorkspace';
 import { Detail } from './Detail';
 import { ReviewWorkspace } from './ReviewWorkspace';
 import { Reporting } from './Reporting';
@@ -22,6 +23,7 @@ const SCREEN_COMPONENTS: Record<ScreenId, () => React.JSX.Element> = {
   'stale-explorer': StaleExplorer,
   campaigns: Campaigns,
   'campaign-detail': CampaignDetail,
+  'component-workspace': ComponentWorkspace,
   detail: Detail,
   review: ReviewWorkspace,
   reporting: Reporting,

@@ -8,6 +8,7 @@ export * from './HighRiskQueue';
 export * from './StaleExplorer';
 export * from './Campaigns';
 export * from './CampaignDetail';
+export * from './ComponentWorkspace';
 export * from './Detail';
 export * from './ReviewWorkspace';
 export * from './Reporting';
