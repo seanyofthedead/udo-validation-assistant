@@ -171,7 +171,7 @@ contested response → a stale line is confirmed as a de‑ob opportunity.
 - `npm run gate` green; all Wave 7 tasks checked.
 
 ### Tasks
-- [ ] **7.1 Response / Escalation / DeobOpportunity types.** **Done:** `tsc --noEmit` clean.
+- [x] **7.1 Response / Escalation / DeobOpportunity types.** **Done:** `tsc --noEmit` clean.
 - [ ] **7.2 Response reducer.** concur/contest/correct; mandatory reason on contest/correct. **Done:** tests — empty reason rejected, concur needs none.
 - [ ] **7.3 `evaluateEscalations()` pure fn.** OVERDUE/CONTESTED/HIGH_DOLLAR/MANUAL over `asOfDate`. **Done:** deterministic tests flag an overdue and a high‑$ item.
 - [ ] **7.4 De‑ob lifecycle reducer.** IDENTIFIED→UNDER_REVIEW→CONFIRMED/REJECTED, reason required on confirm/reject. **Done:** transition + reason tests.

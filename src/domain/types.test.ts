@@ -27,6 +27,14 @@ import type {
   AssignmentState,
   Campaign,
   Assignment,
+  ResponseAction,
+  ResponseState,
+  Response,
+  EscalationTrigger,
+  Escalation,
+  DeobState,
+  DeobDisposition,
+  DeobOpportunity,
 } from './types';
 
 describe('SPEC §5 data model: union literals', () => {
@@ -63,6 +71,26 @@ describe('SPEC §5 data model: union literals', () => {
   it('AssignmentState covers per-assignment progress (Phase 3)', () => {
     const all: AssignmentState[] = ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETE'];
     expect(all).toHaveLength(3);
+  });
+
+  it('ResponseAction covers concur/contest/correct (Phase 3, Wave 7)', () => {
+    const all: ResponseAction[] = ['CONCUR', 'CONTEST', 'CORRECT'];
+    expect(all).toHaveLength(3);
+  });
+
+  it('ResponseState covers the draft → submitted → validated lifecycle (Phase 3)', () => {
+    const all: ResponseState[] = ['DRAFT', 'SUBMITTED', 'VALIDATED'];
+    expect(all).toHaveLength(3);
+  });
+
+  it('EscalationTrigger covers every escalation cause (Phase 3)', () => {
+    const all: EscalationTrigger[] = ['OVERDUE', 'CONTESTED', 'HIGH_DOLLAR', 'MANUAL'];
+    expect(all).toHaveLength(4);
+  });
+
+  it('DeobState covers the de-obligation opportunity lifecycle (Phase 3)', () => {
+    const all: DeobState[] = ['IDENTIFIED', 'UNDER_REVIEW', 'CONFIRMED', 'REJECTED'];
+    expect(all).toHaveLength(4);
   });
 });
 
@@ -214,6 +242,65 @@ describe('SPEC §5 data model: interface shapes', () => {
     expect(assignment.campaignId).toBe('CMP-2026-Q3-01');
     expectTypeOf(assignment.udoIds).toBeArray();
     expect(assignment.state).toBe('NOT_STARTED');
+  });
+
+  it('Response carries a per-line answer with lineage to its assignment (Phase 3)', () => {
+    const concur: Response = {
+      id: 'RSP-CMP-01-USCG-UDO-USCG-0001',
+      assignmentId: 'CMP-01-USCG',
+      udoId: 'UDO-USCG-0001',
+      action: 'CONCUR',
+      reason: '',
+      evidenceRefs: [],
+      state: 'SUBMITTED',
+    };
+    const correct: Response = {
+      id: 'RSP-CMP-01-USCG-UDO-USCG-0002',
+      assignmentId: 'CMP-01-USCG',
+      udoId: 'UDO-USCG-0002',
+      action: 'CORRECT',
+      correctedStatus: 'CLOSED',
+      reason: 'Closeout package signed; status should be CLOSED.',
+      evidenceRefs: ['mock://upload/closeout.pdf'],
+      state: 'DRAFT',
+    };
+    expect(concur.correctedStatus).toBeUndefined();
+    expect(correct.correctedStatus).toBe('CLOSED');
+    expectTypeOf(concur.evidenceRefs).toBeArray();
+  });
+
+  it('Escalation carries a target, trigger, level, and explainable reason (Phase 3)', () => {
+    const esc: Escalation = {
+      id: 'ESC-HIGH_DOLLAR-UDO-CISA-0003',
+      target: 'UDO-CISA-0003',
+      trigger: 'HIGH_DOLLAR',
+      level: 2,
+      reason: 'Obligation $5,000,000 is at or above the leadership threshold.',
+    };
+    expect(esc.target).toBe('UDO-CISA-0003');
+    expect(esc.level).toBe(2);
+  });
+
+  it('DeobOpportunity carries lifecycle state, recoverable $, and optional disposition (Phase 3)', () => {
+    const identified: DeobOpportunity = {
+      udoId: 'UDO-CISA-0003',
+      state: 'IDENTIFIED',
+      estimatedRecoverable: 4_800_000,
+    };
+    const disposition: DeobDisposition = {
+      action: 'CONFIRM',
+      reason: 'PoP long expired, drawdown 4%; recommend de-obligation.',
+      user: 'analyst@dhs.gov',
+      timestamp: '2026-06-21T00:00:00.000Z',
+    };
+    const confirmed: DeobOpportunity = {
+      udoId: 'UDO-CISA-0003',
+      state: 'CONFIRMED',
+      estimatedRecoverable: 4_800_000,
+      disposition,
+    };
+    expect(identified.disposition).toBeUndefined();
+    expect(confirmed.disposition?.action).toBe('CONFIRM');
   });
 
   it('AuditEvent records an actor, action, and detail; udoId optional', () => {

@@ -127,3 +127,62 @@ export interface Assignment {
   dueDate: string; // ISO date
   state: AssignmentState;
 }
+
+// --- Phase 3 (Wave 7) — Component collaboration ---------------------------
+// SPEC §5.4 (Component Response Workspace) and §5.7 (De-Obligation Opportunity
+// Tracker). All additive to the Phase 1/2/3 model; close the HQ→component→HQ
+// loop: components respond with evidence, HQ validates, exceptions escalate.
+
+// A component's per-line answer to an assigned obligation. CONCUR agrees with
+// the AI verdict; CONTEST disputes it; CORRECT proposes a different reported
+// status. A reason is mandatory unless CONCUR — the same discipline as a Phase 1
+// override — but that rule lives in the response reducer, not the type.
+export type ResponseAction = 'CONCUR' | 'CONTEST' | 'CORRECT';
+
+// Lifecycle of one response: drafted by the component, submitted to HQ, then
+// validated by an HQ analyst so concurrence is not rubber-stamped (SPEC §5.4).
+export type ResponseState = 'DRAFT' | 'SUBMITTED' | 'VALIDATED';
+
+export interface Response {
+  id: string; // e.g. "RSP-CMP-01-USCG-UDO-USCG-0001"
+  assignmentId: string; // lineage: response → assignment → campaign
+  udoId: string; // the obligation this response answers
+  action: ResponseAction;
+  correctedStatus?: ReportedStatus; // present only when action === 'CORRECT'
+  reason: string; // MANDATORY unless CONCUR (enforced by the reducer)
+  evidenceRefs: string[]; // mock evidence handles (SPEC §5.4 mock upload)
+  state: ResponseState;
+}
+
+// Why an item needs attention now. OVERDUE: a line in an assignment past its due
+// date; CONTESTED: a contested response; HIGH_DOLLAR: a large obligation; MANUAL:
+// a human-raised flag. (SPEC §4 Escalation Workflow.)
+export type EscalationTrigger = 'OVERDUE' | 'CONTESTED' | 'HIGH_DOLLAR' | 'MANUAL';
+
+export interface Escalation {
+  id: string; // deterministic: "ESC-<trigger>-<target>"
+  target: string; // the escalated obligation's udoId (lineage to the line)
+  trigger: EscalationTrigger;
+  level: number; // 1 = campaign manager, 2 = leadership visibility
+  reason: string; // plain-language basis (explainability, SPEC §7)
+}
+
+// De-obligation opportunity lifecycle (SPEC §5.7): a stale-obligation candidate
+// surfaced from the Phase 1 de-ob flag, then dispositioned by a human. Confirmed
+// dollars roll up to leadership; the platform never auto-posts.
+export type DeobState = 'IDENTIFIED' | 'UNDER_REVIEW' | 'CONFIRMED' | 'REJECTED';
+
+export interface DeobDisposition {
+  // human-in-the-loop record; reason MANDATORY on confirm/reject.
+  action: 'CONFIRM' | 'REJECT';
+  reason: string;
+  user: string;
+  timestamp: string;
+}
+
+export interface DeobOpportunity {
+  udoId: string; // lineage: opportunity → de-ob flag / finding (by udoId)
+  state: DeobState;
+  estimatedRecoverable: number; // USD, carried from the de-ob flag
+  disposition?: DeobDisposition; // set when CONFIRMED or REJECTED
+}
