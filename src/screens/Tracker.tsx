@@ -20,7 +20,7 @@ function usd(amount: number): string {
 }
 
 export function Tracker() {
-  const { escalations, deobOpportunities, asOfDate } = useAppState();
+  const { escalations, deobOpportunities, responses, asOfDate } = useAppState();
   const dispatch = useAppDispatch();
   const { inspect } = useNavigation();
 
@@ -38,6 +38,10 @@ export function Tracker() {
 
   function moveDeob(udoId: string, to: DeobState) {
     dispatch({ type: 'TRANSITION_DEOB', udoId, to, reason: reasonFor(udoId), user: ANALYST, timestamp: ts });
+  }
+
+  function validate(responseId: string) {
+    dispatch({ type: 'VALIDATE_RESPONSE', responseId, user: ANALYST, timestamp: ts });
   }
 
   const confirmedDollars = deobOpportunities
@@ -70,6 +74,59 @@ export function Tracker() {
               </li>
             ))}
           </ul>
+        )}
+      </article>
+
+      <article className="panel" aria-labelledby="validation-title">
+        <h3 id="validation-title">Responses awaiting HQ validation</h3>
+        <p className="filter-count">
+          Validating a response is how HQ checks a component's answer against evidence — concurrence
+          is not rubber-stamped (SPEC §5.4).
+        </p>
+        {responses.length === 0 ? (
+          <p>No component responses submitted yet.</p>
+        ) : (
+          <table className="data-table" aria-label="Submitted responses">
+            <thead>
+              <tr>
+                <th>Obligation</th>
+                <th>Answer</th>
+                <th>State</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {responses.map((r) => (
+                <tr key={r.id} data-response-id={r.id} data-udo-id={r.udoId} data-response-state={r.state}>
+                  <td>
+                    <button type="button" className="link-button" onClick={() => inspect(r.udoId)}>
+                      {r.udoId}
+                    </button>
+                  </td>
+                  <td>
+                    <span className="tag">{r.action}</span>
+                    {r.reason && <> — “{r.reason}”</>}
+                  </td>
+                  <td>
+                    <span className="badge" data-state={r.state}>
+                      {r.state}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      className="primary-button"
+                      aria-label={`Validate ${r.udoId}`}
+                      disabled={r.state !== 'SUBMITTED'}
+                      onClick={() => validate(r.id)}
+                    >
+                      {r.state === 'VALIDATED' ? 'Validated' : 'Validate'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </article>
 
