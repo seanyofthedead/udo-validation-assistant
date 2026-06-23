@@ -10,6 +10,7 @@ export type ScreenId =
   | 'campaigns'
   | 'campaign-detail'
   | 'component-workspace'
+  | 'tracker'
   | 'detail'
   | 'review'
   | 'reporting';
@@ -26,6 +27,7 @@ export const SCREENS: ScreenMeta[] = [
   { id: 'stale-explorer', label: 'Stale Obligation Explorer' },
   { id: 'campaigns', label: 'Review Campaigns' },
   { id: 'component-workspace', label: 'Component Workspace' },
+  { id: 'tracker', label: 'Escalations & De-Ob' },
   { id: 'detail', label: 'UDO Detail' },
   { id: 'review', label: 'Review Workspace' },
   { id: 'reporting', label: 'Reporting / Export' },

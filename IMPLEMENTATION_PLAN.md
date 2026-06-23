@@ -177,7 +177,7 @@ contested response → a stale line is confirmed as a de‑ob opportunity.
 - [x] **7.4 De‑ob lifecycle reducer.** IDENTIFIED→UNDER_REVIEW→CONFIRMED/REJECTED, reason required on confirm/reject. **Done:** transition + reason tests.
 - [x] **7.5 Audit + lineage on all changes.** **Done:** tests assert audit event per change and resolvable lineage links.
 - [x] **7.6 Component Response Workspace UI.** Per‑line response + evidence attach + submit. **Done:** RTL test submits a response set.
-- [ ] **7.7 Escalation + De‑ob tracker UI.** Escalation banner; de‑ob opportunity list with state. **Done:** RTL tests.
+- [x] **7.7 Escalation + De‑ob tracker UI.** Escalation banner; de‑ob opportunity list with state. **Done:** RTL tests.
 - [ ] **7.8 Wave 7 demo integration test.** The demo scenario above. **Done:** test passes.
 - [ ] **7.9 Final gate.** **Done:** `npm run gate` 0 failures; no regression; Wave 7 boxes checked.
 
