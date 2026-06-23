@@ -179,7 +179,7 @@ contested response → a stale line is confirmed as a de‑ob opportunity.
 - [x] **7.6 Component Response Workspace UI.** Per‑line response + evidence attach + submit. **Done:** RTL test submits a response set.
 - [x] **7.7 Escalation + De‑ob tracker UI.** Escalation banner; de‑ob opportunity list with state. **Done:** RTL tests.
 - [x] **7.8 Wave 7 demo integration test.** The demo scenario above. **Done:** test passes.
-- [ ] **7.9 Final gate.** **Done:** `npm run gate` 0 failures; no regression; Wave 7 boxes checked.
+- [x] **7.9 Final gate.** **Done:** `npm run gate` 0 failures; no regression; Wave 7 boxes checked.
 
 ---
 
