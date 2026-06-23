@@ -6,3 +6,4 @@ export * from './riskEngine';
 export * from './campaign';
 export * from './population';
 export * from './assignment';
+export * from './response';
