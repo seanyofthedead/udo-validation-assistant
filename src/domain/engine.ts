@@ -281,6 +281,20 @@ export function qcCheck(
   };
 }
 
+/**
+ * SPEC §8 — staleness: an obligation is stale when its period of performance has
+ * ended AND it has gone quiet (no activity in > INACTIVE_DAYS). This is the
+ * staleness signal the Wave 9 forecast extrapolates over time; low drawdown
+ * (de-obligation candidacy) is a SEPARATE recoverability qualifier handled by
+ * flagDeobligation, not part of staleness. Pure over the record + asOfDate.
+ */
+export function isStale(udo: UdoRecord, asOfDate: string): boolean {
+  const asOf = toEpochMs(asOfDate);
+  const popEnd = toEpochMs(udo.periodOfPerformanceEnd);
+  const lastActivity = toEpochMs(udo.lastActivityDate);
+  return popEnd < asOf && lastActivity < asOf - INACTIVE_DAYS * DAY_MS;
+}
+
 // De-obligation: an open balance is recoverable when its performance window has
 // closed, little was drawn, and it has gone quiet.
 const DEOB_DRAWDOWN_MAX = 0.25;
