@@ -269,7 +269,7 @@ the lines driving the projection.
 - [x] **9.2 Deterministic forecast fn.** Documented trend/aging method, pure. **Done:** test reproduces the documented method on the seed.
 - [x] **9.3 Cross‑component analytics.** Aggregation reconciling to Wave 8 outputs. **Done:** reconciliation test.
 - [x] **9.4 Command‑center console UI.** Heatmap + top movers. **Done:** RTL test renders the console.
-- [ ] **9.5 Forecast panel UI.** "Projection" label + basis always shown. **Done:** RTL test asserts label + basis present.
+- [x] **9.5 Forecast panel UI.** "Projection" label + basis always shown. **Done:** RTL test asserts label + basis present.
 - [ ] **9.6 Wave 9 demo integration test.** The demo scenario above. **Done:** test passes.
 - [ ] **9.7 Final gate.** **Done:** `npm run gate` 0 failures; no regression; Wave 9 boxes checked.
 

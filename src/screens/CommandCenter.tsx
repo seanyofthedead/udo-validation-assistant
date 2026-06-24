@@ -10,6 +10,7 @@
 
 import { useMemo } from 'react';
 import { useAppState } from '../state';
+import { useNavigation } from './navigation';
 import {
   buildCrossComponentAnalytics,
   buildHorizon,
@@ -18,6 +19,7 @@ import {
   snapshotPortfolioAt,
 } from '../domain';
 import type { Component, HeatmapMetric, PortfolioSnapshot } from '../domain';
+import { formatUsd } from '../components';
 
 // How far back the comparison snapshot sits (for the top-movers baseline).
 const PRIOR_WINDOW_DAYS = 180;
@@ -32,9 +34,10 @@ const METRIC_ROWS: { metric: HeatmapMetric; label: string }[] = [
 
 export function CommandCenter() {
   const state = useAppState();
+  const { inspect } = useNavigation();
   const { asOfDate, population, evidence, rules, priorStats } = state;
 
-  const { analytics, components } = useMemo(() => {
+  const { analytics, components, forecast } = useMemo(() => {
     const summary = buildPortfolioSummary(state);
     const currentSnapshot: PortfolioSnapshot = { asOfDate, summary };
 
@@ -57,6 +60,8 @@ export function CommandCenter() {
         forecasts,
       }),
       components: present,
+      // Department-wide staleness projection for the forecast panel (Wave 9.5).
+      forecast: forecastStaleObligations(population, asOfDate, horizon, 'DEPARTMENT'),
     };
   }, [state, asOfDate, population, evidence, rules, priorStats]);
 
@@ -144,6 +149,59 @@ export function CommandCenter() {
           </tbody>
         </table>
       )}
+
+      <section
+        className="panel forecast-panel"
+        data-testid="forecast-panel"
+        aria-labelledby="forecast-title"
+      >
+        <h3 id="forecast-title">
+          Staleness forecast{' '}
+          <span className="badge badge-projection" data-testid="forecast-badge">
+            Projection
+          </span>
+        </h3>
+
+        {/* Advisory only — ALWAYS labeled a projection and ALWAYS carrying its basis
+            (SPEC §5.8), so it can never be mistaken for an observed fact. */}
+        <p className="forecast-headline" data-testid="forecast-projection">
+          <strong>{forecast.projectedValue}</strong> obligation(s) across the department are
+          projected to go stale by {forecast.horizon.endDate} ({forecast.horizon.label}).
+        </p>
+        <p className="forecast-basis" data-testid="forecast-basis">
+          <span className="forecast-basis-label">Basis:</span> {forecast.basis}
+        </p>
+        <p className="forecast-method" data-testid="forecast-method">
+          Method: {forecast.method}. This is an advisory projection — the platform never auto-acts
+          on it.
+        </p>
+
+        {forecast.drivers.length === 0 ? (
+          <p data-testid="forecast-no-drivers">
+            No obligation is projected to newly go stale within this horizon.
+          </p>
+        ) : (
+          <>
+            <h4>Lines driving the projection</h4>
+            <ul className="forecast-drivers" aria-label="Lines driving the projection">
+              {forecast.drivers.map((d) => (
+                <li key={d.udoId} data-testid={`forecast-driver-${d.udoId}`} data-udo-id={d.udoId}>
+                  <button
+                    type="button"
+                    className="link-button"
+                    aria-label={`Drill to ${d.udoId}`}
+                    onClick={() => inspect(d.udoId)}
+                  >
+                    {d.udoId}
+                  </button>{' '}
+                  — {d.component} · {formatUsd(d.estimatedRecoverable)} recoverable ·{' '}
+                  <span className="driver-reason">{d.reason}</span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </section>
     </section>
   );
 }
