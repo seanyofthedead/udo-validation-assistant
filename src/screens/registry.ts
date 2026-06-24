@@ -5,6 +5,7 @@
 export type ScreenId =
   | 'dashboard'
   | 'portfolio'
+  | 'command-center'
   | 'inventory'
   | 'high-risk'
   | 'stale-explorer'
@@ -24,6 +25,7 @@ export interface ScreenMeta {
 export const SCREENS: ScreenMeta[] = [
   { id: 'dashboard', label: 'Executive Dashboard' },
   { id: 'portfolio', label: 'Portfolio Command Center' },
+  { id: 'command-center', label: 'Enterprise Command Center' },
   { id: 'inventory', label: 'UDO Inventory' },
   { id: 'high-risk', label: 'High-Risk Queue' },
   { id: 'stale-explorer', label: 'Stale Obligation Explorer' },

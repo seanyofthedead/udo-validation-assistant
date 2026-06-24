@@ -7,6 +7,7 @@ import { SCREENS, type ScreenId } from './registry';
 import { useNavigation } from './navigation';
 import { Dashboard } from './Dashboard';
 import { Portfolio } from './Portfolio';
+import { CommandCenter } from './CommandCenter';
 import { Inventory } from './Inventory';
 import { HighRiskQueue } from './HighRiskQueue';
 import { StaleExplorer } from './StaleExplorer';
@@ -21,6 +22,7 @@ import { Reporting } from './Reporting';
 const SCREEN_COMPONENTS: Record<ScreenId, () => React.JSX.Element> = {
   dashboard: Dashboard,
   portfolio: Portfolio,
+  'command-center': CommandCenter,
   inventory: Inventory,
   'high-risk': HighRiskQueue,
   'stale-explorer': StaleExplorer,
