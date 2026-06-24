@@ -1,6 +1,18 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
+// Worker pool is selectable so a memory-constrained dev box can opt out of the
+// default `threads` pool. Root cause (measured): on a low-RAM host, constructing
+// the jsdom environment takes ~40s. With `threads`/`forks` that work happens
+// while Vitest waits for the worker's start handshake, which it caps at a
+// *hardcoded* 60s ("Timeout waiting for worker to respond"), so under memory
+// pressure the jsdom test files never boot and the run fails non-deterministically.
+// `vmThreads` sets the environment up AFTER the handshake (and, with isolate:false,
+// once per worker), so jsdom stays under the cap — the full suite then runs green.
+// CI has ample RAM, leaves VITEST_POOL unset, and keeps the faster, proven
+// `threads` pool. Set VITEST_POOL=vmThreads locally on a low-memory machine.
+const pool = (process.env.VITEST_POOL ?? 'threads') as 'threads' | 'forks' | 'vmThreads';
+
 // https://vite.dev/config/  +  https://vitest.dev/config/
 export default defineConfig({
   plugins: [react()],
@@ -28,7 +40,7 @@ export default defineConfig({
     // state, and export layers are pure (no module-level mutable singletons; state
     // lives in React context), and RTL's afterEach cleanup resets the DOM between
     // tests, so sharing a worker across files is safe here.
-    pool: 'threads',
+    pool,
     fileParallelism: false,
     isolate: false,
   },
