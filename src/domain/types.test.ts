@@ -35,6 +35,10 @@ import type {
   DeobState,
   DeobDisposition,
   DeobOpportunity,
+  RiskMix,
+  ComponentScorecard,
+  PortfolioKpis,
+  PortfolioSummary,
 } from './types';
 
 describe('SPEC §5 data model: union literals', () => {
@@ -301,6 +305,62 @@ describe('SPEC §5 data model: interface shapes', () => {
     };
     expect(identified.disposition).toBeUndefined();
     expect(confirmed.disposition?.action).toBe('CONFIRM');
+  });
+
+  it('ComponentScorecard rolls up a component with lineage to its lines (Phase 4)', () => {
+    const riskMix: RiskMix = { LOW: 2, MEDIUM: 1, HIGH: 1, CRITICAL: 1 };
+    const card: ComponentScorecard = {
+      component: 'FEMA',
+      udoCount: 5,
+      reviewedCount: 3,
+      coverage: 0.6,
+      exceptionCount: 2,
+      deobDollars: 4_800_000,
+      riskMix,
+      udoIds: ['UDO-FEMA-0001', 'UDO-FEMA-0002'],
+    };
+    expect(card.coverage).toBeGreaterThanOrEqual(0);
+    expect(card.coverage).toBeLessThanOrEqual(1);
+    expect(card.riskMix.LOW + card.riskMix.MEDIUM + card.riskMix.HIGH + card.riskMix.CRITICAL).toBe(
+      card.udoCount,
+    );
+    expectTypeOf(card.udoIds).toBeArray();
+  });
+
+  it('PortfolioKpis carries the department roll-up KPIs (Phase 4)', () => {
+    const kpis: PortfolioKpis = {
+      asOfDate: '2026-06-23',
+      udoCount: 25,
+      totalObligated: 100_000_000,
+      reviewedCount: 15,
+      coverage: 0.6,
+      exceptionCount: 8,
+      deobDollars: 12_000_000,
+      campaignCompletion: 0.5,
+      riskMix: { LOW: 10, MEDIUM: 8, HIGH: 4, CRITICAL: 3 },
+    };
+    expect(kpis.campaignCompletion).toBeGreaterThanOrEqual(0);
+    expect(kpis.campaignCompletion).toBeLessThanOrEqual(1);
+    expectTypeOf(kpis.totalObligated).toBeNumber();
+  });
+
+  it('PortfolioSummary bundles the KPIs with per-component scorecards (Phase 4)', () => {
+    const summary: PortfolioSummary = {
+      kpis: {
+        asOfDate: '2026-06-23',
+        udoCount: 0,
+        totalObligated: 0,
+        reviewedCount: 0,
+        coverage: 0,
+        exceptionCount: 0,
+        deobDollars: 0,
+        campaignCompletion: 1,
+        riskMix: { LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0 },
+      },
+      scorecards: [],
+    };
+    expectTypeOf(summary.scorecards).toBeArray();
+    expect(summary.scorecards).toHaveLength(0);
   });
 
   it('AuditEvent records an actor, action, and detail; udoId optional', () => {

@@ -220,7 +220,7 @@ exception lines → opens one line's audit trail.
 - `npm run gate` green; all Wave 8 tasks checked.
 
 ### Tasks
-- [ ] **8.1 Scorecard + aggregation types.** `ComponentScorecard` + portfolio KPI types. **Done:** `tsc --noEmit` clean.
+- [x] **8.1 Scorecard + aggregation types.** `ComponentScorecard` + portfolio KPI types. **Done:** `tsc --noEmit` clean.
 - [ ] **8.2 Pure aggregation fns.** Portfolio KPIs + per‑component scorecards over the store. **Done:** reconciliation tests — KPI === sum of sources.
 - [ ] **8.3 Portfolio dashboard UI.** KPIs, scorecard grid, campaign completion, de‑ob rollup. **Done:** RTL test asserts numbers match engine output.
 - [ ] **8.4 Drill‑down.** KPI → contributing lines → line audit trail. **Done:** RTL test navigates KPI to exactly the contributing lines.

@@ -186,3 +186,44 @@ export interface DeobOpportunity {
   estimatedRecoverable: number; // USD, carried from the de-ob flag
   disposition?: DeobDisposition; // set when CONFIRMED or REJECTED
 }
+
+// --- Phase 4 (Wave 8) — Executive visibility ------------------------------
+// Additive, READ-ONLY aggregation views over the Phase 1–3 records (UDOs,
+// findings, risk, campaigns/assignments, responses, de-ob). SPEC §5: leadership
+// needs a defensible department scorecard that drills to the line. No new
+// mutation paths — these are pure projections computed over the store. Every
+// value reconciles to its source records (asserted in tests) and every row
+// carries the lineage (udoIds) needed to drill from a KPI to the lines behind it.
+
+// Count of obligations in each risk band — the scorecard's risk distribution.
+// Keyed by RiskBand so the four counts always sum to the row's scored lines
+// (explainability: a leadership "risk mix" cell traces to which bands it counts).
+export type RiskMix = Record<RiskBand, number>;
+
+export interface ComponentScorecard {
+  component: Component;
+  udoCount: number; // obligations attributed to this component (denominator)
+  reviewedCount: number; // lines with a disposition or a submitted/validated response
+  coverage: number; // 0..1 = reviewedCount / udoCount (0 when udoCount === 0)
+  exceptionCount: number; // lines needing attention (non-VALID verdict or escalated)
+  deobDollars: number; // CONFIRMED de-ob $ rolled up for this component
+  riskMix: RiskMix; // band distribution across this component's scored lines
+  udoIds: string[]; // lineage: every line behind this row (drill-down target)
+}
+
+export interface PortfolioKpis {
+  asOfDate: string; // the asOfDate the aggregates were computed against
+  udoCount: number; // department-wide obligation count
+  totalObligated: number; // sum of amountObligated across the population (USD)
+  reviewedCount: number; // department-wide reviewed lines
+  coverage: number; // 0..1 = reviewedCount / udoCount (0 when empty)
+  exceptionCount: number; // department-wide exception lines
+  deobDollars: number; // department-wide CONFIRMED de-ob $ rolled up
+  campaignCompletion: number; // 0..1 = COMPLETE assignments / total (1 when none)
+  riskMix: RiskMix; // department-wide band distribution
+}
+
+export interface PortfolioSummary {
+  kpis: PortfolioKpis; // department roll-up; equals the sum of the scorecards
+  scorecards: ComponentScorecard[]; // one per component present, stable order
+}
