@@ -265,7 +265,7 @@ the lines driving the projection.
 - `npm run gate` green; all Wave 9 tasks checked.
 
 ### Tasks
-- [ ] **9.1 Forecast + snapshot types.** `Forecast` + time‑series snapshot. **Done:** `tsc --noEmit` clean.
+- [x] **9.1 Forecast + snapshot types.** `Forecast` + time‑series snapshot. **Done:** `tsc --noEmit` clean.
 - [ ] **9.2 Deterministic forecast fn.** Documented trend/aging method, pure. **Done:** test reproduces the documented method on the seed.
 - [ ] **9.3 Cross‑component analytics.** Aggregation reconciling to Wave 8 outputs. **Done:** reconciliation test.
 - [ ] **9.4 Command‑center console UI.** Heatmap + top movers. **Done:** RTL test renders the console.

@@ -39,6 +39,15 @@ import type {
   ComponentScorecard,
   PortfolioKpis,
   PortfolioSummary,
+  ForecastMetric,
+  ForecastHorizon,
+  ForecastDriver,
+  Forecast,
+  PortfolioSnapshot,
+  HeatmapMetric,
+  HeatmapCell,
+  ComponentMover,
+  CrossComponentAnalytics,
 } from './types';
 
 describe('SPEC §5 data model: union literals', () => {
@@ -95,6 +104,16 @@ describe('SPEC §5 data model: union literals', () => {
   it('DeobState covers the de-obligation opportunity lifecycle (Phase 3)', () => {
     const all: DeobState[] = ['IDENTIFIED', 'UNDER_REVIEW', 'CONFIRMED', 'REJECTED'];
     expect(all).toHaveLength(4);
+  });
+
+  it('ForecastMetric covers the MVP forecast metric (Phase 4 → L5)', () => {
+    const all: ForecastMetric[] = ['STALE_OBLIGATIONS'];
+    expect(all).toHaveLength(1);
+  });
+
+  it('HeatmapMetric covers the cross-component heatmap rows (Phase 4 → L5)', () => {
+    const all: HeatmapMetric[] = ['exceptions', 'critical', 'projectedStale'];
+    expect(all).toHaveLength(3);
   });
 });
 
@@ -361,6 +380,77 @@ describe('SPEC §5 data model: interface shapes', () => {
     };
     expectTypeOf(summary.scorecards).toBeArray();
     expect(summary.scorecards).toHaveLength(0);
+  });
+
+  it('Forecast is an advisory projection with horizon, basis, and driver lineage (Phase 4 → L5)', () => {
+    const horizon: ForecastHorizon = { label: 'next quarter', days: 90, endDate: '2026-09-19' };
+    const driver: ForecastDriver = {
+      udoId: 'UDO-USCG-0003',
+      component: 'USCG',
+      estimatedRecoverable: 250_000,
+      reason: 'Period of performance expires within the horizon; drawdown 38% and dormant.',
+    };
+    const forecast: Forecast = {
+      target: 'DEPARTMENT',
+      metric: 'STALE_OBLIGATIONS',
+      projectedValue: 1,
+      horizon,
+      method: 'aging extrapolation v0.1',
+      basis: 'Holds financials flat and advances the as-of date to 2026-09-19.',
+      drivers: [driver],
+      asOfDate: '2026-06-21',
+    };
+    expect(forecast.projectedValue).toBe(forecast.drivers.length);
+    expect(forecast.horizon.endDate).toBe('2026-09-19');
+    expectTypeOf(forecast.drivers).toBeArray();
+    expect(forecast.basis.length).toBeGreaterThan(0);
+  });
+
+  it('PortfolioSnapshot tags a Wave 8 summary with its as-of date (time series unit)', () => {
+    const snapshot: PortfolioSnapshot = {
+      asOfDate: '2026-06-21',
+      summary: {
+        kpis: {
+          asOfDate: '2026-06-21',
+          udoCount: 0,
+          totalObligated: 0,
+          reviewedCount: 0,
+          coverage: 0,
+          exceptionCount: 0,
+          deobDollars: 0,
+          campaignCompletion: 1,
+          riskMix: { LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0 },
+        },
+        scorecards: [],
+      },
+    };
+    expect(snapshot.asOfDate).toBe(snapshot.summary.kpis.asOfDate);
+  });
+
+  it('CrossComponentAnalytics carries the heatmap and top movers (Phase 4 → L5)', () => {
+    const cell: HeatmapCell = {
+      component: 'FEMA',
+      metric: 'exceptions',
+      value: 3,
+      intensity: 1,
+      isSpike: true,
+    };
+    const mover: ComponentMover = {
+      component: 'FEMA',
+      metric: 'exceptions',
+      from: 1,
+      to: 3,
+      delta: 2,
+    };
+    const analytics: CrossComponentAnalytics = {
+      asOfDate: '2026-06-21',
+      heatmap: [cell],
+      topMovers: [mover],
+    };
+    expect(analytics.heatmap[0].isSpike).toBe(true);
+    expect(analytics.topMovers[0].delta).toBe(
+      analytics.topMovers[0].to - analytics.topMovers[0].from,
+    );
   });
 
   it('AuditEvent records an actor, action, and detail; udoId optional', () => {

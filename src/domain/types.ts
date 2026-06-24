@@ -227,3 +227,89 @@ export interface PortfolioSummary {
   kpis: PortfolioKpis; // department roll-up; equals the sum of the scorecards
   scorecards: ComponentScorecard[]; // one per component present, stable order
 }
+
+// --- Phase 4 → L5 (Wave 9) — Enterprise Command Center --------------------
+// The predictive step (SPEC §5.8). All additive and READ-ONLY over the Phase
+// 1–4 records. Determinism still holds: forecasts are pure over inputs + an
+// explicit `asOfDate` + horizon (no clock, no random), every projection is
+// labeled a Projection and carries its `basis` plus the lines driving it
+// (lineage: forecast → input obligations). Method is documented in
+// docs/wave9-forecast-method.md so the number is reproducible — and the
+// signature anticipates a future model-backed implementation (AWS future state).
+
+// What a forecast projects. MVP ships exactly one metric: the count of
+// obligations projected to become STALE (de-obligation candidates) by the
+// horizon. Kept as a union so a model-backed build can add metrics additively.
+export type ForecastMetric = 'STALE_OBLIGATIONS';
+
+// A labeled future window. `endDate` is derived from the forecast's asOfDate +
+// `days` (pure calendar math, no clock) and is the as-of date the projection
+// re-evaluates the staleness predicate against.
+export interface ForecastHorizon {
+  label: string; // e.g. "next quarter"
+  days: number; // length of the window in days from asOfDate
+  endDate: string; // ISO date = asOfDate + days
+}
+
+// One obligation behind a projected count — the lineage from a forecast down to
+// a specific line expected to cross the staleness threshold, with its reason.
+export interface ForecastDriver {
+  udoId: string;
+  component: Component;
+  estimatedRecoverable: number; // USD that becomes recoverable if it goes stale
+  reason: string; // plain-language: why this line is projected to go stale by endDate
+}
+
+// An advisory projection (SPEC §5.8) — never a fact. The UI always renders the
+// "Projection" label and the `basis`. `method` names the documented technique so
+// the value is reproducible; `projectedValue` equals `drivers.length`.
+export interface Forecast {
+  target: Component | 'DEPARTMENT'; // scope of the projection
+  metric: ForecastMetric;
+  projectedValue: number; // the projected count (equals drivers.length)
+  horizon: ForecastHorizon;
+  method: string; // documented method label, e.g. "aging extrapolation v0.1"
+  basis: string; // plain-language basis + inputs, ALWAYS surfaced
+  drivers: ForecastDriver[]; // lineage: the obligations behind the projection
+  asOfDate: string; // the date the projection was computed from
+}
+
+// A point-in-time portfolio roll-up — the unit of the command center's time
+// series. `summary` is the Wave 8 aggregate (buildPortfolioSummary) at `asOfDate`.
+export interface PortfolioSnapshot {
+  asOfDate: string;
+  summary: PortfolioSummary;
+}
+
+// Metrics surfaced as rows of the cross-component heatmap. The current-state
+// rows reconcile to the Wave 8 scorecards; `projectedStale` reconciles to the
+// per-component forecast.
+export type HeatmapMetric = 'exceptions' | 'critical' | 'projectedStale';
+
+// One component × metric cell. `intensity` is value / row-max (0..1) for
+// coloring; `isSpike` marks the (non-zero) row leader — the spike leadership
+// should look at first.
+export interface HeatmapCell {
+  component: Component;
+  metric: HeatmapMetric;
+  value: number;
+  intensity: number; // 0..1 relative to the metric's max across components
+  isSpike: boolean; // value is the non-zero max for this metric
+}
+
+// A component whose metric moved most between two snapshots (delta = to − from).
+export interface ComponentMover {
+  component: Component;
+  metric: string; // the metric that moved, e.g. "exceptions"
+  from: number; // value in the prior snapshot
+  to: number; // value in the latest snapshot
+  delta: number; // to − from (signed)
+}
+
+// Cross-component analytics over the latest snapshot (+ the prior, for movers).
+// The current-state heatmap cells reconcile to the Wave 8 scorecards (asserted).
+export interface CrossComponentAnalytics {
+  asOfDate: string; // the latest snapshot's date
+  heatmap: HeatmapCell[]; // component × metric grid
+  topMovers: ComponentMover[]; // largest movers between the two latest snapshots
+}
