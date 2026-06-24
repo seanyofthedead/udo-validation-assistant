@@ -224,7 +224,7 @@ exception lines → opens one line's audit trail.
 - [x] **8.2 Pure aggregation fns.** Portfolio KPIs + per‑component scorecards over the store. **Done:** reconciliation tests — KPI === sum of sources.
 - [x] **8.3 Portfolio dashboard UI.** KPIs, scorecard grid, campaign completion, de‑ob rollup. **Done:** RTL test asserts numbers match engine output.
 - [x] **8.4 Drill‑down.** KPI → contributing lines → line audit trail. **Done:** RTL test navigates KPI to exactly the contributing lines.
-- [ ] **8.5 Wave 8 demo integration test.** The demo scenario above. **Done:** test passes.
+- [x] **8.5 Wave 8 demo integration test.** The demo scenario above. **Done:** test passes.
 - [ ] **8.6 Final gate.** **Done:** `npm run gate` 0 failures; no regression; Wave 8 boxes checked.
 
 ---
