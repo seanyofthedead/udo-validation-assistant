@@ -3,6 +3,7 @@ export * from './registry';
 export * from './navigation';
 export * from './AppShell';
 export * from './Dashboard';
+export * from './Portfolio';
 export * from './Inventory';
 export * from './HighRiskQueue';
 export * from './StaleExplorer';
