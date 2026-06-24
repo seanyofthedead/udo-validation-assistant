@@ -23,6 +23,7 @@ import type {
   EvidenceItem,
   PriorYearStat,
   Response,
+  ReviewDecision,
   RiskScore,
   UdoRecord,
   ValidationFinding,
@@ -137,6 +138,19 @@ export type AppAction =
       type: 'RECORD_EXPORT';
       artifact: string;
       format: 'CSV' | 'JSON';
+      user: string;
+      timestamp: string;
+    }
+  // Step 6 of the DHS HQ process — the reviewer's operational determination of a
+  // line (keep / liquidate / de-obligate / closeout / research / escalate). A
+  // reason is MANDATORY (abstain over guessing); a blank reason is a no-op, the
+  // same discipline as a blank-reason override. Recorded as a disposition + one
+  // audit event; the platform still never auto-posts.
+  | {
+      type: 'RECORD_DETERMINATION';
+      udoId: string;
+      decision: ReviewDecision;
+      reason: string;
       user: string;
       timestamp: string;
     }
@@ -258,6 +272,35 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         action: 'OVERRIDE',
         udoId: action.udoId,
         detail: `${action.user} overrode the verdict to ${action.overrideVerdict}. Reason: ${action.reason}`,
+      };
+      return {
+        ...state,
+        dispositions: [...state.dispositions, disposition],
+        auditLog: appendAudit(state.auditLog, event),
+      };
+    }
+
+    case 'RECORD_DETERMINATION': {
+      // SPEC §10 discipline — mandatory reason; a blank/whitespace reason is a
+      // no-op (no disposition, no audit), mirroring the override guard. The
+      // determination is the reviewer's *operational* decision, recorded distinctly
+      // from a verdict override so the audit trail shows what HQ will DO with the line.
+      if (action.reason.trim() === '') return state;
+
+      const disposition: Disposition = {
+        udoId: action.udoId,
+        action: 'DETERMINATION',
+        reviewDecision: action.decision,
+        reason: action.reason.trim(),
+        user: action.user,
+        timestamp: action.timestamp,
+      };
+      const event: AuditEvent = {
+        timestamp: action.timestamp,
+        actor: 'HUMAN',
+        action: 'DETERMINATION',
+        udoId: action.udoId,
+        detail: `${action.user} determined ${action.udoId}: ${action.decision}. Reason: ${action.reason.trim()}`,
       };
       return {
         ...state,

@@ -3,6 +3,7 @@
 // truth.
 
 export type ScreenId =
+  | 'process'
   | 'dashboard'
   | 'portfolio'
   | 'command-center'
@@ -23,6 +24,7 @@ export interface ScreenMeta {
 }
 
 export const SCREENS: ScreenMeta[] = [
+  { id: 'process', label: 'UDO Process Map' },
   { id: 'dashboard', label: 'Executive Dashboard' },
   { id: 'portfolio', label: 'Portfolio Command Center' },
   { id: 'command-center', label: 'Enterprise Command Center' },

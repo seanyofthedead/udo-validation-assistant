@@ -6,6 +6,23 @@ export type ReportedStatus = 'OPEN_ACTIVE' | 'OPEN_INACTIVE' | 'PENDING_CLOSE' |
 export type Verdict = 'VALID' | 'QUESTIONABLE' | 'INSUFFICIENT_EVIDENCE';
 export type EvidenceType = 'PO' | 'INVOICE' | 'RECEIPT' | 'MOD' | 'GL';
 
+// --- Federal financial-management descriptors (additive, optional) ---------
+// These make a UDO line legible to a DHS HQ budget analyst / COR / contracting
+// officer. They are descriptive metadata only — the deterministic engines
+// (validation, risk, de-ob, forecast) do NOT read them, so they are optional and
+// changing them never affects a verdict, score, or Phase 1 guarantee. Values in
+// the seed are clearly-labeled MOCK data (SPEC §9: TAS/object-class/owner specifics
+// are unconfirmed) and are designed to be edited once real definitions land.
+
+/** Who accountably owns the line's review (drives assignment routing). */
+export type OwnerRole = 'COR' | 'PROGRAM_MANAGER' | 'BUDGET_ANALYST' | 'CONTRACTING_OFFICER';
+
+/** Liquidation signal — how far invoicing has progressed against the obligation. */
+export type InvoiceStatus = 'NONE' | 'PARTIAL' | 'CURRENT' | 'FINAL';
+
+/** Receiving/acceptance signal — whether goods/services have been accepted. */
+export type AcceptanceStatus = 'NONE' | 'PARTIAL' | 'COMPLETE';
+
 export interface UdoRecord {
   id: string; // e.g. "UDO-USCG-0001"
   component: Component;
@@ -19,6 +36,18 @@ export interface UdoRecord {
   obligationDate: string; // ISO date
   lastActivityDate: string; // ISO date
   periodOfPerformanceEnd: string; // ISO date
+
+  // --- Optional federal descriptors (see note above) -----------------------
+  lineNumber?: string; // obligation line item, e.g. "0001AA"
+  treasuryAccountSymbol?: string; // TAS / appropriation symbol, e.g. "070-24/25-0530"
+  fiscalYear?: number; // fund/budget year (drives cancelling-fund urgency)
+  appropriation?: string; // plain-language appropriation, e.g. "O&M, Coast Guard"
+  objectClass?: string; // OMB object class, e.g. "25.2 Other services"
+  contractingOffice?: string; // office that can execute a mod / de-ob
+  programOwner?: string; // named COR / program owner accountable for the line
+  ownerRole?: OwnerRole; // the accountable owner's role
+  invoiceStatus?: InvoiceStatus; // liquidation signal
+  acceptanceStatus?: AcceptanceStatus; // receiving/acceptance signal
 }
 
 export interface EvidenceItem {
@@ -58,12 +87,25 @@ export interface DeobligationFlag {
   reasons: string[];
 }
 
+// The reviewer's operational disposition of a UDO line (step 6 of the DHS HQ
+// process). Distinct from the AI's *assessment* verdict: a Verdict says whether
+// the reported status looks right; a ReviewDecision says what HQ will DO about
+// the line. A reason is mandatory on every determination (abstain over guessing).
+export type ReviewDecision =
+  | 'VALID' // obligation still required; keep it open
+  | 'LIQUIDATE' // goods/services received; invoice/payment action needed
+  | 'DEOBLIGATE' // excess/invalid balance; remove the funds
+  | 'CLOSEOUT' // contract/order complete; administrative closeout required
+  | 'NEEDS_RESEARCH' // insufficient evidence to decide
+  | 'ESCALATE'; // policy/legal/contracting/system issue; higher-level review
+
 export interface Disposition {
   // human-in-the-loop record
   udoId: string;
-  action: 'CONFIRM' | 'OVERRIDE';
+  action: 'CONFIRM' | 'OVERRIDE' | 'DETERMINATION';
   overrideVerdict?: Verdict;
-  reason: string; // MANDATORY on override
+  reviewDecision?: ReviewDecision; // set when action === 'DETERMINATION' (step 6)
+  reason: string; // MANDATORY on override and on a determination
   user: string;
   timestamp: string;
 }

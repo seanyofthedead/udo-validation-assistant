@@ -30,6 +30,43 @@ describe('createInitialState', () => {
   });
 });
 
+describe('appReducer: RECORD_DETERMINATION', () => {
+  it('records a determination disposition + one HUMAN audit event when reasoned', () => {
+    const s0 = initialState();
+    const s1 = appReducer(s0, {
+      type: 'RECORD_DETERMINATION',
+      udoId: 'UDO-USCG-0005',
+      decision: 'DEOBLIGATE',
+      reason: 'Expired PoP, 10% drawn — recover the balance.',
+      user: 'analyst@dhs.gov',
+      timestamp: TS,
+    });
+    expect(s1.dispositions).toHaveLength(1);
+    expect(s1.dispositions[0]).toMatchObject({
+      udoId: 'UDO-USCG-0005',
+      action: 'DETERMINATION',
+      reviewDecision: 'DEOBLIGATE',
+    });
+    const added = s1.auditLog.filter((e) => e.action === 'DETERMINATION');
+    expect(added).toHaveLength(1);
+    expect(added[0]).toMatchObject({ actor: 'HUMAN', udoId: 'UDO-USCG-0005' });
+    expect(added[0].detail).toMatch(/DEOBLIGATE/);
+  });
+
+  it('is a no-op on a blank justification (abstain over guessing)', () => {
+    const s0 = initialState();
+    const s1 = appReducer(s0, {
+      type: 'RECORD_DETERMINATION',
+      udoId: 'UDO-USCG-0005',
+      decision: 'ESCALATE',
+      reason: '   ',
+      user: 'analyst@dhs.gov',
+      timestamp: TS,
+    });
+    expect(s1).toBe(s0); // unchanged: no disposition, no audit entry
+  });
+});
+
 describe('appReducer: CONFIRM', () => {
   it('records a CONFIRM disposition (no reason) and appends a HUMAN audit event', () => {
     const s0 = initialState();
@@ -220,7 +257,11 @@ describe('appReducer: component collaboration (Wave 7)', () => {
     });
 
     expect(s1.responses).toHaveLength(1);
-    expect(s1.responses[0]).toMatchObject({ udoId: 'UDO-USCG-0001', action: 'CONCUR', state: 'SUBMITTED' });
+    expect(s1.responses[0]).toMatchObject({
+      udoId: 'UDO-USCG-0001',
+      action: 'CONCUR',
+      state: 'SUBMITTED',
+    });
     // One of two lines answered → IN_PROGRESS.
     expect(s1.assignments.find((a) => a.id === assignmentId)!.state).toBe('IN_PROGRESS');
     expect(s1.auditLog.length).toBe(created.auditLog.length + 1);
@@ -235,7 +276,13 @@ describe('appReducer: component collaboration (Wave 7)', () => {
     const { created, assignmentId, campaign } = seedCampaign(initialState());
     const s1 = appReducer(created, {
       type: 'SUBMIT_RESPONSE',
-      draft: { assignmentId, udoId: 'UDO-USCG-0001', action: 'CONCUR', reason: '', evidenceRefs: [] },
+      draft: {
+        assignmentId,
+        udoId: 'UDO-USCG-0001',
+        action: 'CONCUR',
+        reason: '',
+        evidenceRefs: [],
+      },
       user: 'fm@uscg.dhs.gov',
       timestamp: TS,
     });
@@ -250,7 +297,13 @@ describe('appReducer: component collaboration (Wave 7)', () => {
     const { created, assignmentId } = seedCampaign(initialState());
     const s1 = appReducer(created, {
       type: 'SUBMIT_RESPONSE',
-      draft: { assignmentId, udoId: 'UDO-USCG-0001', action: 'CONTEST', reason: '   ', evidenceRefs: [] },
+      draft: {
+        assignmentId,
+        udoId: 'UDO-USCG-0001',
+        action: 'CONTEST',
+        reason: '   ',
+        evidenceRefs: [],
+      },
       user: 'fm@uscg.dhs.gov',
       timestamp: TS,
     });
@@ -261,7 +314,13 @@ describe('appReducer: component collaboration (Wave 7)', () => {
     const { created, assignmentId } = seedCampaign(initialState());
     const submitted = appReducer(created, {
       type: 'SUBMIT_RESPONSE',
-      draft: { assignmentId, udoId: 'UDO-USCG-0001', action: 'CONTEST', reason: 'Active work ongoing.', evidenceRefs: [] },
+      draft: {
+        assignmentId,
+        udoId: 'UDO-USCG-0001',
+        action: 'CONTEST',
+        reason: 'Active work ongoing.',
+        evidenceRefs: [],
+      },
       user: 'fm@uscg.dhs.gov',
       timestamp: TS,
     });
@@ -284,7 +343,9 @@ describe('appReducer: component collaboration (Wave 7)', () => {
     const { created } = seedCampaign(initialState());
     const s1 = appReducer(created, { type: 'RAISE_ESCALATIONS', timestamp: TS });
     expect(s1.escalations.some((e) => e.trigger === 'OVERDUE')).toBe(true);
-    expect(s1.escalations.some((e) => e.trigger === 'HIGH_DOLLAR' && e.target === 'UDO-USCG-0002')).toBe(true);
+    expect(
+      s1.escalations.some((e) => e.trigger === 'HIGH_DOLLAR' && e.target === 'UDO-USCG-0002'),
+    ).toBe(true);
     expect(s1.auditLog.length).toBe(created.auditLog.length + 1);
     expect(s1.auditLog[s1.auditLog.length - 1]).toMatchObject({ actor: 'AI', action: 'ESCALATE' });
   });

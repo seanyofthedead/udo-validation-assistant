@@ -5,6 +5,14 @@
 import { useAppState } from '../state';
 import { useNavigation } from './navigation';
 import { RiskBandChip, VerdictBadge, formatUsd, formatPct, drawdownRatio } from '../components';
+import type { OwnerRole } from '../domain/types';
+
+const OWNER_ROLE_LABEL: Record<OwnerRole, string> = {
+  COR: 'COR',
+  PROGRAM_MANAGER: 'Program Manager',
+  BUDGET_ANALYST: 'Budget Analyst',
+  CONTRACTING_OFFICER: 'Contracting Officer',
+};
 
 export function Detail() {
   const { population, evidence, findings, deobFlags, rules, riskScores } = useAppState();
@@ -44,12 +52,34 @@ export function Detail() {
             <dl className="record">
               <dt>Component</dt>
               <dd>{udo.component}</dd>
+              <dt>Obligation document</dt>
+              <dd>
+                {udo.obligationNumber}
+                {udo.lineNumber ? ` · line ${udo.lineNumber}` : ''}
+              </dd>
               <dt>Vendor</dt>
               <dd>{udo.vendor}</dd>
               <dt>Description</dt>
               <dd>{udo.description}</dd>
-              <dt>Funding type</dt>
-              <dd>{udo.fundingType}</dd>
+              <dt>Appropriation / TAS</dt>
+              <dd>
+                {udo.appropriation ?? udo.fundingType}
+                {udo.treasuryAccountSymbol ? ` (${udo.treasuryAccountSymbol})` : ''}
+              </dd>
+              <dt>Funding type / fiscal year</dt>
+              <dd>
+                {udo.fundingType}
+                {udo.fiscalYear ? ` · FY${udo.fiscalYear}` : ''}
+              </dd>
+              <dt>Object class</dt>
+              <dd>{udo.objectClass ?? '—'}</dd>
+              <dt>Contracting office</dt>
+              <dd>{udo.contractingOffice ?? '—'}</dd>
+              <dt>Program owner</dt>
+              <dd>
+                {udo.programOwner ?? '—'}
+                {udo.ownerRole ? ` (${OWNER_ROLE_LABEL[udo.ownerRole]})` : ''}
+              </dd>
               <dt>Reported status</dt>
               <dd>{udo.reportedStatus}</dd>
               <dt>Obligated</dt>
@@ -58,6 +88,10 @@ export function Detail() {
               <dd>
                 {formatUsd(udo.amountDisbursed)} (
                 {formatPct(drawdownRatio(udo.amountObligated, udo.amountDisbursed))} drawn)
+              </dd>
+              <dt>Invoice / acceptance</dt>
+              <dd>
+                {udo.invoiceStatus ?? '—'} invoiced · {udo.acceptanceStatus ?? '—'} accepted
               </dd>
               <dt>Period of performance ends</dt>
               <dd>{udo.periodOfPerformanceEnd}</dd>

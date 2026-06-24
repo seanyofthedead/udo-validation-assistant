@@ -395,6 +395,38 @@ body {
   white-space: nowrap;
 }
 
+/* UDO Process Map (G1) — the ten-step lifecycle, one panel per step */
+.process-list {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 48rem) {
+  .process-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+.process-step h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  color: #1a4b8c;
+}
+
+.process-value {
+  margin: 0.3rem 0;
+  font-size: 0.85rem;
+}
+
+.tag-enhance {
+  background: #d6f0d6;
+  color: #1d6b1d;
+}
+
 .filters .range-inputs {
   display: inline-flex;
   gap: 0.3rem;

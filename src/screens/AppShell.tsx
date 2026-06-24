@@ -5,6 +5,7 @@
 import { useAppState } from '../state';
 import { SCREENS, type ScreenId } from './registry';
 import { useNavigation } from './navigation';
+import { UdoProcessMap } from './UdoProcessMap';
 import { Dashboard } from './Dashboard';
 import { Portfolio } from './Portfolio';
 import { CommandCenter } from './CommandCenter';
@@ -20,6 +21,7 @@ import { ReviewWorkspace } from './ReviewWorkspace';
 import { Reporting } from './Reporting';
 
 const SCREEN_COMPONENTS: Record<ScreenId, () => React.JSX.Element> = {
+  process: UdoProcessMap,
   dashboard: Dashboard,
   portfolio: Portfolio,
   'command-center': CommandCenter,
@@ -43,9 +45,10 @@ export function AppShell() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>UDO Validation Assistant</h1>
+        <h1>DHS HQ UDO Review Platform</h1>
         <p className="app-subtitle">
-          Independent second opinion on undelivered orders · as of {asOfDate}
+          Headquarters-led, risk-based review of undelivered orders · validation assistant · as of{' '}
+          {asOfDate}
         </p>
         <nav className="app-nav" aria-label="Screens">
           {SCREENS.map((s) => (

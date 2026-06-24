@@ -7,10 +7,21 @@ import { useState } from 'react';
 import { useAppState, useAppDispatch } from '../state';
 import { useNavigation } from './navigation';
 import { VerdictBadge } from '../components';
-import type { Verdict } from '../domain/types';
+import type { ReviewDecision, Verdict } from '../domain/types';
 
 const REVIEWER = 'analyst@dhs.gov';
 const VERDICTS: Verdict[] = ['VALID', 'QUESTIONABLE', 'INSUFFICIENT_EVIDENCE'];
+
+// Step 6 of the DHS HQ process — the reviewer's operational determination. Distinct
+// from the AI's assessment verdict above: this says what HQ will DO with the line.
+const DETERMINATIONS: { value: ReviewDecision; label: string }[] = [
+  { value: 'VALID', label: 'Valid — keep open' },
+  { value: 'LIQUIDATE', label: 'Liquidate — invoice/payment action' },
+  { value: 'DEOBLIGATE', label: 'De-obligate — remove excess balance' },
+  { value: 'CLOSEOUT', label: 'Closeout required — order complete' },
+  { value: 'NEEDS_RESEARCH', label: 'Needs research — insufficient evidence' },
+  { value: 'ESCALATE', label: 'Escalate — higher-level review' },
+];
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -23,6 +34,8 @@ export function ReviewWorkspace() {
 
   const [overrideVerdict, setOverrideVerdict] = useState<Verdict>('VALID');
   const [reason, setReason] = useState('');
+  const [decision, setDecision] = useState<ReviewDecision>('VALID');
+  const [justification, setJustification] = useState('');
 
   const udo = population.find((u) => u.id === selectedUdoId);
   const finding = findings.find((f) => f.udoId === selectedUdoId);
@@ -30,6 +43,7 @@ export function ReviewWorkspace() {
   const udoDispositions = dispositions.filter((d) => d.udoId === selectedUdoId);
   const udoAudit = auditLog.filter((e) => e.udoId === selectedUdoId);
   const reasonValid = reason.trim() !== '';
+  const justificationValid = justification.trim() !== '';
 
   function confirm() {
     if (!udo) return;
@@ -47,6 +61,19 @@ export function ReviewWorkspace() {
       timestamp: nowIso(),
     });
     setReason('');
+  }
+
+  function recordDetermination() {
+    if (!udo || !justificationValid) return;
+    dispatch({
+      type: 'RECORD_DETERMINATION',
+      udoId: udo.id,
+      decision,
+      reason: justification.trim(),
+      user: REVIEWER,
+      timestamp: nowIso(),
+    });
+    setJustification('');
   }
 
   return (
@@ -117,6 +144,46 @@ export function ReviewWorkspace() {
                 Record override
               </button>
             </fieldset>
+
+            <fieldset className="override-form">
+              <legend>Reviewer determination</legend>
+              <p className="filter-count">
+                The operational decision for this line — what HQ will do about it (step 6).
+              </p>
+              <label>
+                Determination
+                <select
+                  value={decision}
+                  onChange={(e) => setDecision(e.target.value as ReviewDecision)}
+                >
+                  {DETERMINATIONS.map((d) => (
+                    <option key={d.value} value={d.value}>
+                      {d.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Justification (required)
+                <textarea
+                  value={justification}
+                  onChange={(e) => setJustification(e.target.value)}
+                  rows={3}
+                  aria-describedby="determination-help"
+                />
+              </label>
+              <p id="determination-help" className="filter-count">
+                A determination cannot be recorded without a justification.
+              </p>
+              <button
+                type="button"
+                onClick={recordDetermination}
+                disabled={!justificationValid}
+                className="primary-button"
+              >
+                Record determination
+              </button>
+            </fieldset>
           </article>
 
           <article className="panel" aria-labelledby="history-title">
@@ -128,7 +195,8 @@ export function ReviewWorkspace() {
                 {udoDispositions.map((d, i) => (
                   <li key={i}>
                     <strong>{d.action}</strong>
-                    {d.action === 'OVERRIDE' && ` → ${d.overrideVerdict}`} by {d.user}
+                    {d.action === 'OVERRIDE' && ` → ${d.overrideVerdict}`}
+                    {d.action === 'DETERMINATION' && ` → ${d.reviewDecision}`} by {d.user}
                     {d.reason && <> — “{d.reason}”</>}
                   </li>
                 ))}

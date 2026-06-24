@@ -14,7 +14,7 @@ describe('App shell', () => {
   it('renders the title and defaults to the Executive Dashboard', () => {
     render(<App />);
     expect(
-      screen.getByRole('heading', { level: 1, name: /UDO Validation Assistant/i }),
+      screen.getByRole('heading', { level: 1, name: /DHS HQ UDO Review Platform/i }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('heading', { level: 2, name: 'Executive Dashboard' }),

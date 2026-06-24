@@ -32,6 +32,26 @@ describe('seed population: structure', () => {
     expect(ids.size).toBe(seedPopulation.length);
   });
 
+  it('carries federal descriptors on every record (legibility for a HQ reviewer)', () => {
+    const roles = new Set(['COR', 'PROGRAM_MANAGER', 'BUDGET_ANALYST', 'CONTRACTING_OFFICER']);
+    const invoice = new Set(['NONE', 'PARTIAL', 'CURRENT', 'FINAL']);
+    const acceptance = new Set(['NONE', 'PARTIAL', 'COMPLETE']);
+    for (const u of seedPopulation) {
+      expect(u.lineNumber, `lineNumber on ${u.id}`).toMatch(/^\d{4}AA$/);
+      expect(u.treasuryAccountSymbol, `TAS on ${u.id}`).toMatch(/^070-/);
+      expect(u.fiscalYear, `fiscalYear on ${u.id}`).toBe(Number(u.obligationDate.slice(0, 4)));
+      expect(u.appropriation, `appropriation on ${u.id}`).toBeTruthy();
+      expect(u.objectClass, `objectClass on ${u.id}`).toBeTruthy();
+      expect(u.contractingOffice, `contractingOffice on ${u.id}`).toBeTruthy();
+      expect(u.programOwner, `programOwner on ${u.id}`).toBeTruthy();
+      expect(roles.has(u.ownerRole as string), `ownerRole on ${u.id}`).toBe(true);
+      expect(invoice.has(u.invoiceStatus as string), `invoiceStatus on ${u.id}`).toBe(true);
+      expect(acceptance.has(u.acceptanceStatus as string), `acceptanceStatus on ${u.id}`).toBe(
+        true,
+      );
+    }
+  });
+
   it('every record has a design entry, and every design id is a real record', () => {
     const ids = new Set(seedPopulation.map((u) => u.id));
     for (const id of ids) expect(SEED_DESIGN[id], `missing design for ${id}`).toBeDefined();

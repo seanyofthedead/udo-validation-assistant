@@ -2,6 +2,7 @@
 export * from './registry';
 export * from './navigation';
 export * from './AppShell';
+export * from './UdoProcessMap';
 export * from './Dashboard';
 export * from './Portfolio';
 export * from './CommandCenter';

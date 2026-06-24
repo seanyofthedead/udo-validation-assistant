@@ -19,8 +19,10 @@
 // match SEED_DESIGN — so the fixture and engine can never silently drift apart.
 
 import type {
+  Component,
   EvidenceItem,
   EvidenceType,
+  OwnerRole,
   PriorYearStat,
   UdoRecord,
   Verdict,
@@ -29,7 +31,7 @@ import type {
 /** Fixed valuation date for the entire deterministic pipeline. */
 export const AS_OF_DATE = '2026-06-21';
 
-export const seedPopulation: UdoRecord[] = [
+const rawSeedPopulation: UdoRecord[] = [
   // ---- USCG -------------------------------------------------------------
   {
     id: 'UDO-USCG-0001',
@@ -324,6 +326,118 @@ export const seedPopulation: UdoRecord[] = [
     periodOfPerformanceEnd: '2025-05-31', // expired
   },
 ];
+
+// --- Federal descriptors (MOCK; SPEC §9 — TAS / object class / owner specifics
+// are unconfirmed). Derived deterministically from each record so every line
+// reads like a real DHS HQ obligation without hand-editing 20 rows. These fields
+// are PURELY DESCRIPTIVE: the deterministic engines (validation, risk, de-ob,
+// forecast) never read them, so enriching the seed cannot change any verdict,
+// score, or de-ob flag — the Phase 1 golden path is unaffected. Edit freely when
+// real definitions land.
+
+interface ComponentProfile {
+  tasStem: string; // Treasury Account Symbol; "{AVAIL}" gets the fund-availability span
+  appropriation: string; // plain-language appropriation name
+  office: string; // contracting office that can execute a mod / de-ob
+  owners: string[]; // mock named owners (COR / program owner), picked by line suffix
+}
+
+const COMPONENT_PROFILE: Record<Component, ComponentProfile> = {
+  USCG: {
+    tasStem: '070-{AVAIL}-0530',
+    appropriation: 'Operations & Support, U.S. Coast Guard',
+    office: 'USCG Surface Forces Logistics Center (Contracting)',
+    owners: ['M. Alvarez', 'R. Chen', 'T. Okafor', 'L. Petersen'],
+  },
+  TSA: {
+    tasStem: '070-{AVAIL}-0540',
+    appropriation: 'Operations & Support, Transportation Security Admin.',
+    office: 'TSA Acquisition Program Management Division',
+    owners: ['D. Romano', 'S. Bhatt', 'K. Willis', 'J. Frye'],
+  },
+  FEMA: {
+    tasStem: '070-{AVAIL}-0560',
+    appropriation: 'Federal Assistance, FEMA',
+    office: 'FEMA Office of the Chief Procurement Officer',
+    owners: ['A. Delgado', 'P. Nyström', 'C. Boateng', 'H. Mills'],
+  },
+  CBP: {
+    tasStem: '070-{AVAIL}-0530',
+    appropriation: 'Operations & Support, Customs & Border Protection',
+    office: 'CBP Procurement Directorate (Border Enforcement)',
+    owners: ['V. Ortiz', 'B. Sandoval', 'E. Kovac', 'N. Reyes'],
+  },
+  CISA: {
+    tasStem: '070-{AVAIL}-0430',
+    appropriation: 'Procurement, Construction & Improvements, CISA',
+    office: 'CISA Acquisition Division',
+    owners: ['G. Haddad', 'Q. Lindqvist', 'F. Osei', 'W. Tran'],
+  },
+};
+
+const ROLE_CYCLE: OwnerRole[] = ['COR', 'PROGRAM_MANAGER', 'BUDGET_ANALYST', 'CONTRACTING_OFFICER'];
+
+/** Two-digit year from an ISO date (no clock read; parses the literal). */
+function yearOf(iso: string): number {
+  return Number(iso.slice(0, 4));
+}
+
+/** OMB object class by funding type (A-11): procurement → equipment; else services. */
+function objectClassFor(fundingType: string): string {
+  return fundingType === 'Procurement'
+    ? '31.0 Equipment'
+    : '25.2 Other services from non-Federal sources';
+}
+
+/** Liquidation signal from how far the obligation has drawn down. */
+function invoiceStatusFor(udo: UdoRecord): UdoRecord['invoiceStatus'] {
+  const drawdown = udo.amountObligated > 0 ? udo.amountDisbursed / udo.amountObligated : 0;
+  if (drawdown >= 0.98) return 'FINAL';
+  if (drawdown >= 0.5) return 'CURRENT';
+  if (drawdown > 0) return 'PARTIAL';
+  return 'NONE';
+}
+
+/** Receiving/acceptance signal from status + drawdown. */
+function acceptanceStatusFor(udo: UdoRecord): UdoRecord['acceptanceStatus'] {
+  if (udo.reportedStatus === 'CLOSED') return 'COMPLETE';
+  const drawdown = udo.amountObligated > 0 ? udo.amountDisbursed / udo.amountObligated : 0;
+  if (udo.reportedStatus === 'PENDING_CLOSE') return drawdown >= 0.5 ? 'COMPLETE' : 'PARTIAL';
+  if (drawdown >= 0.5) return 'PARTIAL';
+  return 'NONE';
+}
+
+/** Attach the (mock, descriptive) federal fields to a base record. */
+function withFederalDescriptors(udo: UdoRecord): UdoRecord {
+  const profile = COMPONENT_PROFILE[udo.component];
+  const suffix = Number(udo.id.slice(-2)); // trailing line index, e.g. ...0003 -> 3
+  const ownerIdx = (suffix - 1 + 4) % 4;
+  const fy = yearOf(udo.obligationDate);
+  const fy2 = String(fy).slice(-2);
+  // O&M is a 1-year fund (single FY); Procurement is multi-year (FY/FY+1 span).
+  const avail = udo.fundingType === 'Procurement' ? `${fy2}/${String(fy + 1).slice(-2)}` : fy2;
+  return {
+    ...udo,
+    lineNumber: `${String(suffix).padStart(4, '0')}AA`,
+    treasuryAccountSymbol: profile.tasStem.replace('{AVAIL}', avail),
+    fiscalYear: fy,
+    appropriation: profile.appropriation,
+    objectClass: objectClassFor(udo.fundingType),
+    contractingOffice: profile.office,
+    programOwner: profile.owners[ownerIdx],
+    ownerRole: ROLE_CYCLE[ownerIdx],
+    invoiceStatus: invoiceStatusFor(udo),
+    acceptanceStatus: acceptanceStatusFor(udo),
+  };
+}
+
+/**
+ * The seed population, enriched with federal descriptors. The raw records above
+ * carry the financially-significant fields the engines read; this map layers on
+ * the descriptive federal metadata (TAS, appropriation, object class, owner, etc.)
+ * that makes each line legible to a DHS HQ reviewer.
+ */
+export const seedPopulation: UdoRecord[] = rawSeedPopulation.map(withFederalDescriptors);
 
 // Evidence builder — keeps the 60+ rows readable. `invoiced` sets an INVOICE
 // item whose amount matches amountDisbursed (so the SPEC §6 invoice-amount

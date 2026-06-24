@@ -37,6 +37,16 @@ describe('Detail: AI findings panel', () => {
     expect(screen.getByText(/\$4,800,000/)).toBeInTheDocument();
   });
 
+  it('surfaces the federal descriptors (TAS, object class, owner, invoice/acceptance)', () => {
+    // UDO-USCG-0001 — Procurement vs O&M, named owner, partial drawdown.
+    renderWithProviders(<Detail />, { initialUdoId: 'UDO-USCG-0001' });
+    expect(screen.getByText(/Operations & Support, U\.S\. Coast Guard/)).toBeInTheDocument();
+    expect(screen.getByText(/070-24-0530/)).toBeInTheDocument();
+    expect(screen.getByText(/25\.2 Other services/)).toBeInTheDocument();
+    expect(screen.getByText(/Contracting\)/)).toBeInTheDocument(); // contracting office text
+    expect(screen.getByText(/PARTIAL invoiced · NONE accepted/)).toBeInTheDocument();
+  });
+
   it('prompts for a selection when no UDO is chosen, then shows detail on pick', () => {
     renderWithProviders(<Detail />);
     expect(screen.getByText(/Select a UDO to view its details/i)).toBeInTheDocument();

@@ -71,3 +71,33 @@ describe('ReviewWorkspace: recording dispositions', () => {
     expect(within(history).getByText(/CONFIRM/)).toBeInTheDocument();
   });
 });
+
+describe('ReviewWorkspace: reviewer determination (step 6)', () => {
+  it('blocks the determination until a justification is entered', () => {
+    renderWithProviders(<ReviewWorkspace />, { initialUdoId: 'UDO-USCG-0005' });
+    const button = screen.getByRole('button', { name: /Record determination/i });
+    expect(button).toBeDisabled();
+    fireEvent.change(screen.getByLabelText(/Justification/i), {
+      target: { value: 'Expired PoP, 10% drawn — recover the balance.' },
+    });
+    expect(button).toBeEnabled();
+  });
+
+  it('records a determination in disposition history and the audit trail', () => {
+    renderWithProviders(<ReviewWorkspace />, { initialUdoId: 'UDO-USCG-0005' });
+    fireEvent.change(screen.getByLabelText(/Determination/i), {
+      target: { value: 'DEOBLIGATE' },
+    });
+    fireEvent.change(screen.getByLabelText(/Justification/i), {
+      target: { value: 'Expired PoP, 10% drawn — recover the balance.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Record determination/i }));
+
+    const history = screen.getByRole('list', { name: 'Disposition history list' });
+    expect(within(history).getByText(/DETERMINATION/)).toBeInTheDocument();
+    expect(within(history).getByText(/DEOBLIGATE/)).toBeInTheDocument();
+
+    const audit = screen.getByLabelText('Audit activity');
+    expect(within(audit).getByText(/determined UDO-USCG-0005: DEOBLIGATE/i)).toBeInTheDocument();
+  });
+});
